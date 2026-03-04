@@ -8,19 +8,20 @@ import { SpotifyCallback } from '@/app/pages/SpotifyCallback';
 import { JoinCodeModal } from '@/app/components/JoinCodeModal';
 import { CreatePartyModal } from '@/app/components/CreatePartyModal';
 import { Toast } from '@/app/components/Toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParty } from '@/lib/useParty';
 import { api } from '@/lib/api';
 
 type View = 'login' | 'signup' | 'guest' | 'host';
 
 function AppContent() {
-  const { user, loading, resetPassword } = useAuth();
+  const { user, loading, loginWithGoogle, resetPassword } = useAuth();
   const spotify = useSpotify();
   const [currentView, setCurrentView] = useState<View>('login');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const party = useParty();
+  const pendingRoomCodeRef = useRef<string | null>(null);
 
   // Handle Spotify OAuth callback
   if (window.location.pathname === '/callback') {
@@ -48,6 +49,15 @@ function AppContent() {
     }
   }, [isLoggedIn]);
 
+  // After any login method, auto-join if a room code was pending
+  useEffect(() => {
+    if (isLoggedIn && pendingRoomCodeRef.current) {
+      const code = pendingRoomCodeRef.current;
+      pendingRoomCodeRef.current = null;
+      handleJoinWithCode(code).catch(console.error);
+    }
+  }, [isLoggedIn]);
+
   if (loading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#050505]">
@@ -56,23 +66,24 @@ function AppContent() {
     );
   }
 
-  const handleLogin = (_email: string, _password: string, _roomCode?: string) => {
-    // Firebase login is handled by LoginCard
-    setCurrentView('guest');
+  const handleLogin = (_email: string, _password: string, roomCode?: string) => {
+    if (roomCode) pendingRoomCodeRef.current = roomCode;
   };
 
-  const handleSignUp = (_name: string, _email: string, _password: string, _roomCode?: string) => {
-    // Firebase signup is handled by SignUpCard
-    setCurrentView('guest');
+  const handleSignUp = (_name: string, _email: string, _password: string, roomCode?: string) => {
+    if (roomCode) pendingRoomCodeRef.current = roomCode;
   };
 
-  const handleGoogleLogin = () => {
-    setCurrentView('guest');
+  const handleGoogleLogin = async (roomCode?: string) => {
+    if (roomCode) pendingRoomCodeRef.current = roomCode;
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      console.error('Google login failed:', err);
+    }
   };
 
-  const handleGoogleSignUp = () => {
-    setCurrentView('guest');
-  };
+  const handleGoogleSignUp = handleGoogleLogin;
 
   const handleForgotPassword = async (email: string) => {
     if (!email) {

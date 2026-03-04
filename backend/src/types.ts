@@ -16,6 +16,7 @@ export interface Party {
   mood: string;
   kidFriendly: boolean;
   allowSuggestions: boolean;
+  locked: boolean;
   createdAt: number;
 }
 

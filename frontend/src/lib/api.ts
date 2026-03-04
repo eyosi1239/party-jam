@@ -17,6 +17,7 @@ import type {
   UpdateMoodRequest,
   UpdateKidFriendlyRequest,
   UpdateAllowSuggestionsRequest,
+  UpdateLockedRequest,
   UpdateNowPlayingRequest,
   ApiError,
 } from './types';
@@ -148,6 +149,16 @@ class ApiClient {
     data: UpdateAllowSuggestionsRequest
   ): Promise<{ allowSuggestions: boolean }> {
     return this.request(`/party/${partyId}/settings/allowSuggestions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLocked(
+    partyId: string,
+    data: UpdateLockedRequest
+  ): Promise<{ locked: boolean }> {
+    return this.request(`/party/${partyId}/settings/locked`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

@@ -4,7 +4,7 @@ import { FirebaseError } from 'firebase/app';
 
 interface LoginCardProps {
   onLogin?: (email: string, password: string, roomCode?: string) => void;
-  onGoogleLogin?: () => void;
+  onGoogleLogin?: (roomCode?: string) => void;
   onSpotifyLogin?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
@@ -278,7 +278,7 @@ export function LoginCard({
             {/* Google Button */}
             <button
               type="button"
-              onClick={onGoogleLogin}
+              onClick={() => onGoogleLogin?.(roomCode || undefined)}
               className="w-full bg-transparent border-2 border-[#00ff41] text-[#00ff41] hover:bg-[#00ff41]/10 active:bg-[#00ff41]/20 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

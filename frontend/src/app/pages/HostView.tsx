@@ -21,13 +21,12 @@ interface HostViewProps {
   partyState: PartyState | null;
   joinCode: string | null;
   onStartParty: () => Promise<void>;
-  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean }) => Promise<void>;
+  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
   onLeaveRoom?: () => void;
 }
 
 export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings, onRegenerateCode, onLeaveRoom }: HostViewProps) {
-  const [isRoomLocked, setIsRoomLocked] = useState(false);
   const [showNewCodeModal, setShowNewCodeModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showEndPartyModal, setShowEndPartyModal] = useState(false);
@@ -35,7 +34,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const [isSeedingQueue, setIsSeedingQueue] = useState(false);
 
   // Spotify Web Playback SDK — only active when user has authenticated with Spotify
-  const { playbackState, playTrack, togglePlay } = useSpotifyPlayer();
+  const { playbackState, playTrack, togglePlay, setVolume } = useSpotifyPlayer();
 
   // Auto-play on Spotify when nowPlaying changes (e.g. after skip) or player first connects
   const nowPlayingTrackId = partyState?.nowPlaying?.trackId;
@@ -57,6 +56,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const members = partyState.members || [];
   const nowPlaying = partyState.nowPlaying;
   const { party } = partyState;
+  const isRoomLocked = party.locked ?? false;
 
   const handleGenerateNewCode = async () => {
     setShowNewCodeModal(false);
@@ -168,7 +168,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
                 onPlayPause={togglePlay}
                 onSkip={handleSkipCurrent}
                 onBack={() => {}}
-                onVolumeChange={(vol) => console.log('Volume:', vol)}
+                onVolumeChange={setVolume}
               />
             ) : (
               <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-[#1a1a1a] rounded-3xl p-8 text-center">
@@ -265,7 +265,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
               {/* Room Controls */}
               <div className="space-y-3">
                 <button
-                  onClick={() => setIsRoomLocked(!isRoomLocked)}
+                  onClick={() => onUpdateSettings({ locked: !isRoomLocked })}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
                     isRoomLocked
                       ? 'bg-[#00ff41] text-black'

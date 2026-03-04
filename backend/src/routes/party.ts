@@ -36,6 +36,7 @@ router.post('/party', (req: Request, res: Response) => {
     mood: mood || 'chill',
     kidFriendly: kidFriendly ?? false,
     allowSuggestions: allowSuggestions ?? true,
+    locked: false,
     createdAt: now,
   };
 
@@ -86,6 +87,14 @@ router.post('/party/:partyId/join', (req: Request, res: Response) => {
   const party = store.getParty(partyId);
   if (!party) {
     return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  // Block new guests when room is locked (host can still rejoin)
+  if (party.locked && userId !== party.hostId) {
+    const existing = store.getMember(partyId, userId);
+    if (!existing) {
+      return res.status(403).json(createError('ROOM_LOCKED', 'This room is locked and not accepting new guests'));
+    }
   }
 
   // Check if already a member
@@ -569,6 +578,7 @@ router.post('/party/:partyId/settings/mood', (req: Request, res: Response) => {
         mood: updatedParty.mood,
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
+        locked: updatedParty.locked,
       });
     }
   }
@@ -604,6 +614,7 @@ router.post('/party/:partyId/settings/kidFriendly', (req: Request, res: Response
         mood: updatedParty.mood,
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
+        locked: updatedParty.locked,
       });
     }
   }
@@ -639,11 +650,48 @@ router.post('/party/:partyId/settings/allowSuggestions', (req: Request, res: Res
         mood: updatedParty.mood,
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
+        locked: updatedParty.locked,
       });
     }
   }
 
   res.json({ allowSuggestions });
+});
+
+// POST /party/:partyId/settings/locked - Lock/unlock the room
+router.post('/party/:partyId/settings/locked', (req: Request, res: Response) => {
+  const { partyId } = req.params;
+  const { hostId, locked } = req.body;
+
+  if (!hostId || locked === undefined) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and locked are required'));
+  }
+
+  const party = store.getParty(partyId);
+  if (!party) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  if (party.hostId !== hostId) {
+    return res.status(403).json(createError('NOT_HOST', 'Only host can lock/unlock the room'));
+  }
+
+  store.updateParty(partyId, { locked });
+
+  // Broadcast settings update
+  if (io) {
+    const updatedParty = store.getParty(partyId);
+    if (updatedParty) {
+      io.to(`party:${partyId}`).emit('party:settingsUpdated', {
+        mood: updatedParty.mood,
+        kidFriendly: updatedParty.kidFriendly,
+        allowSuggestions: updatedParty.allowSuggestions,
+        locked: updatedParty.locked,
+      });
+    }
+  }
+
+  res.json({ locked });
 });
 
 // POST /party/:partyId/nowPlaying - Update now playing

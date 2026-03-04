@@ -18,6 +18,7 @@ export interface UseSpotifyPlayerResult {
   playbackState: SpotifyPlaybackState;
   playTrack: (uri: string) => Promise<void>;
   togglePlay: () => Promise<void>;
+  setVolume: (volumePct: number) => Promise<void>;
 }
 
 const DEFAULT_STATE: SpotifyPlaybackState = {
@@ -131,5 +132,10 @@ export function useSpotifyPlayer(): UseSpotifyPlayerResult {
     await playerRef.current?.togglePlay();
   }, []);
 
-  return { playbackState, playTrack, togglePlay };
+  // volumePct is 0–100; Spotify SDK expects 0.0–1.0
+  const setVolume = useCallback(async (volumePct: number) => {
+    await playerRef.current?.setVolume(volumePct / 100);
+  }, []);
+
+  return { playbackState, playTrack, togglePlay, setVolume };
 }

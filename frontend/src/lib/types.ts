@@ -16,6 +16,7 @@ export interface Party {
   mood: string;
   kidFriendly: boolean;
   allowSuggestions: boolean;
+  locked: boolean;
   createdAt: number;
 }
 
@@ -123,6 +124,11 @@ export interface UpdateKidFriendlyRequest {
 export interface UpdateAllowSuggestionsRequest {
   hostId: string;
   allowSuggestions: boolean;
+}
+
+export interface UpdateLockedRequest {
+  hostId: string;
+  locked: boolean;
 }
 
 export interface UpdateNowPlayingRequest {
