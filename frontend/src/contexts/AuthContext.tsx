@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '@/firebase/config';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -64,6 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    if (!auth) {
+      throw new Error('Firebase is not configured. Add your credentials to frontend/.env.local');
+    }
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  };
+
   const logout = async () => {
     if (!auth) {
       throw new Error('Firebase is not configured. Add your credentials to frontend/.env.local');
@@ -84,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, login, logout, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, signUp, login, loginWithGoogle, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

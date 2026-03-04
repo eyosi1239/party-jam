@@ -15,7 +15,7 @@ import { api } from '@/lib/api';
 type View = 'login' | 'signup' | 'guest' | 'host';
 
 function AppContent() {
-  const { user, loading, resetPassword } = useAuth();
+  const { user, loading, loginWithGoogle, resetPassword } = useAuth();
   const spotify = useSpotify();
   const [currentView, setCurrentView] = useState<View>('login');
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -71,15 +71,15 @@ function AppContent() {
     setCurrentView('guest');
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login');
-    setCurrentView('guest');
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      console.error('Google login failed:', err);
+    }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log('Google sign up');
-    setCurrentView('guest');
-  };
+  const handleGoogleSignUp = handleGoogleLogin;
 
   const handleForgotPassword = async (email: string) => {
     if (!email) {
