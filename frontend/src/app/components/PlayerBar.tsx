@@ -1,5 +1,4 @@
 import { Play, Pause, SkipForward, Volume2 } from 'lucide-react';
-import { useState } from 'react';
 
 interface PlayerBarProps {
   albumArt?: string;
@@ -22,8 +21,6 @@ export function PlayerBar({
   onPlayPause,
   onSkip
 }: PlayerBarProps) {
-  const [showHostTooltip, setShowHostTooltip] = useState(false);
-
   return (
     <div className="bg-gradient-to-t from-[#0a0a0a] to-[#050505] border-t border-[#1a1a1a] px-4 py-3">
       <div className="max-w-[1400px] mx-auto">
@@ -52,46 +49,32 @@ export function PlayerBar({
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onPlayPause}
-              className="p-2 rounded-xl bg-[#00ff41] text-black hover:bg-[#00e639] transition-all duration-200"
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5" />
-              ) : (
-                <Play className="w-5 h-5" />
-              )}
-            </button>
-
-            <div className="relative">
+          {/* Controls — only shown for host; guests see a read-only now-playing bar */}
+          {isHost && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={isHost ? onSkip : undefined}
-                onMouseEnter={() => !isHost && setShowHostTooltip(true)}
-                onMouseLeave={() => setShowHostTooltip(false)}
-                disabled={!isHost}
-                className={`p-2 rounded-xl transition-all duration-200 ${
-                  isHost
-                    ? 'text-[#00ff41] hover:bg-[#00ff41]/10'
-                    : 'text-[#6b7280] cursor-not-allowed'
-                }`}
+                onClick={onPlayPause}
+                className="p-2 rounded-xl bg-[#00ff41] text-black hover:bg-[#00e639] transition-all duration-200"
+              >
+                {isPlaying ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5" />
+                )}
+              </button>
+
+              <button
+                onClick={onSkip}
+                className="p-2 rounded-xl text-[#00ff41] hover:bg-[#00ff41]/10 transition-all duration-200"
               >
                 <SkipForward className="w-5 h-5" />
               </button>
 
-              {showHostTooltip && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#9ca3af] whitespace-nowrap">
-                  Host only
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-[#1a1a1a] border-r border-b border-[#2a2a2a] rotate-45" />
-                </div>
-              )}
+              <button className="p-2 rounded-xl text-[#9ca3af] hover:text-[#00ff41] hover:bg-[#1a1a1a] transition-all duration-200 hidden sm:block">
+                <Volume2 className="w-5 h-5" />
+              </button>
             </div>
-
-            <button className="p-2 rounded-xl text-[#9ca3af] hover:text-[#00ff41] hover:bg-[#1a1a1a] transition-all duration-200 hidden sm:block">
-              <Volume2 className="w-5 h-5" />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -340,8 +340,6 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
             isPlaying={true}
             progress={0}
             isHost={false}
-            onPlayPause={() => console.log('Play/Pause')}
-            onSkip={() => console.log('Skip')}
           />
         </div>
       )}
