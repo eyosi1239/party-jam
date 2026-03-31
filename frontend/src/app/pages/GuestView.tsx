@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider, type Track } from '@/lib/music';
 import { api } from '@/lib/api';
+import { useSpotify } from '@/contexts/SpotifyContext';
 
 interface GuestViewProps {
   partyState: PartyState | null;
@@ -22,9 +23,10 @@ interface GuestViewProps {
   onLeaveRoom?: () => void;
 }
 
-const musicProvider = getMusicProvider();
-
 export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCreateParty, onJoinParty, onLeaveRoom }: GuestViewProps) {
+  const spotify = useSpotify();
+  // Re-derive on each render so Spotify login mid-session is picked up automatically
+  const musicProvider = getMusicProvider();
   const [selectedFilter, setSelectedFilter] = useState('Recommended');
   const [searchQuery, setSearchQuery] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);

@@ -141,6 +141,9 @@ export class PartyStore {
     const partyData = this.parties.get(partyId);
     if (!partyData) return false;
 
+    // Prevent duplicates
+    if (partyData.queue.some((s) => s.trackId === song.trackId)) return false;
+
     partyData.queue.push(song);
     return true;
   }

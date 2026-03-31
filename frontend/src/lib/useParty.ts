@@ -285,8 +285,9 @@ export function useParty(): UsePartyResult {
       });
     };
 
-    // Add song to testing suggestions
+    // Add song to testing suggestions — only if this user is in the sample
     const handleSuggestionTesting = (data: any) => {
+      if (!Array.isArray(data.sampleUserIds) || !data.sampleUserIds.includes(userId)) return;
       setPartyState((prev) => {
         if (!prev) return prev;
         if (prev.testingSuggestions.find((s) => s.trackId === data.trackId)) return prev;

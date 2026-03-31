@@ -32,6 +32,8 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const [showEndPartyModal, setShowEndPartyModal] = useState(false);
   const [selectedSongToRemove, setSelectedSongToRemove] = useState<{ title: string; trackId: string } | null>(null);
   const [isSeedingQueue, setIsSeedingQueue] = useState(false);
+  const [endPartyError, setEndPartyError] = useState<string | null>(null);
+  const [volume, setVolumeState] = useState(70);
 
   // Spotify Web Playback SDK — only active when user has authenticated with Spotify
   const { playbackState, playTrack, togglePlay, setVolume } = useSpotifyPlayer();
@@ -107,12 +109,14 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
 
   const handleEndParty = async () => {
     setShowEndPartyModal(false);
+    setEndPartyError(null);
     try {
       await api.endParty(party.partyId, party.hostId);
+      onLeaveRoom?.();
     } catch (err) {
       console.error('Failed to end party:', err);
+      setEndPartyError('Failed to end the party. Please try again.');
     }
-    onLeaveRoom?.();
   };
 
   const handleSeedQueue = async () => {
@@ -164,11 +168,11 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
                 currentTime={formatTime(playbackState.progressMs)}
                 totalTime={formatTime(playbackState.durationMs)}
                 progress={playbackState.durationMs > 0 ? (playbackState.progressMs / playbackState.durationMs) * 100 : 0}
-                volume={70}
+                volume={volume}
                 onPlayPause={togglePlay}
                 onSkip={handleSkipCurrent}
                 onBack={() => {}}
-                onVolumeChange={setVolume}
+                onVolumeChange={(v) => { setVolumeState(v); setVolume(v); }}
               />
             ) : (
               <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-[#1a1a1a] rounded-3xl p-8 text-center">
@@ -370,6 +374,14 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
           </div>
         </div>
       </div>
+
+      {/* End party error banner */}
+      {endPartyError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-red-500/90 text-white rounded-xl shadow-lg text-sm">
+          {endPartyError}
+          <button className="ml-4 underline opacity-80 hover:opacity-100" onClick={() => setEndPartyError(null)}>Dismiss</button>
+        </div>
+      )}
 
       {/* Generate New Code Modal */}
       <Modal

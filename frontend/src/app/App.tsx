@@ -20,6 +20,7 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<View>('login');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [appError, setAppError] = useState<string | null>(null);
   const party = useParty();
   const pendingRoomCodeRef = useRef<string | null>(null);
 
@@ -54,7 +55,9 @@ function AppContent() {
     if (isLoggedIn && pendingRoomCodeRef.current) {
       const code = pendingRoomCodeRef.current;
       pendingRoomCodeRef.current = null;
-      handleJoinWithCode(code).catch(console.error);
+      handleJoinWithCode(code).catch((err: any) => {
+        setAppError(err?.message ?? 'Failed to join party. Check the code and try again.');
+      });
     }
   }, [isLoggedIn]);
 
@@ -103,7 +106,7 @@ function AppContent() {
 
   // Called by CreatePartyModal with chosen mood
   const handleCreateWithMood = async (mood: string) => {
-    const userId = user?.uid ?? `host_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? `host_${Date.now()}`;
     await party.createParty(userId, mood);
   };
 
@@ -113,7 +116,7 @@ function AppContent() {
   // Called by JoinCodeModal with the resolved code
   const handleJoinWithCode = async (joinCode: string) => {
     const { partyId } = await api.resolveJoinCode(joinCode);
-    const userId = user?.uid ?? `guest_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? `guest_${Date.now()}`;
     await party.joinParty(partyId, userId);
   };
 
@@ -189,6 +192,16 @@ function AppContent() {
           message="The host ended the party"
           type="info"
           duration={5000}
+        />
+      )}
+
+      {/* App-level error (e.g. pending room code auto-join failed) */}
+      {appError && (
+        <Toast
+          message={appError}
+          type="error"
+          duration={6000}
+          onClose={() => setAppError(null)}
         />
       )}
     </div>

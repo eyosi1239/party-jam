@@ -71,11 +71,25 @@ export interface PartySettingsUpdatedPayload {
   mood: string;
   kidFriendly: boolean;
   allowSuggestions: boolean;
+  locked?: boolean;
 }
 
 export interface PartyErrorPayload {
   code: string;
   message: string;
+}
+
+export interface PartyEndedPayload {
+  partyId: string;
+}
+
+export interface PartyMembersUpdatedPayload {
+  members: Array<{ userId: string; role: string; joinedAt: number; lastActiveAt: number }>;
+  activeMembersCount: number;
+}
+
+export interface PartyCodeRegeneratedPayload {
+  joinCode: string;
 }
 
 // Typed event handlers map
@@ -92,6 +106,9 @@ export type SocketEventHandlers = {
   'party:songRemoved': (payload: PartySongRemovedPayload) => void;
   'party:settingsUpdated': (payload: PartySettingsUpdatedPayload) => void;
   'party:error': (payload: PartyErrorPayload) => void;
+  'party:ended': (payload: PartyEndedPayload) => void;
+  'party:membersUpdated': (payload: PartyMembersUpdatedPayload) => void;
+  'party:codeRegenerated': (payload: PartyCodeRegeneratedPayload) => void;
 };
 
 class PartySocketClient {
@@ -118,6 +135,16 @@ class PartySocketClient {
 
     this.socket.on('connect', () => {
       console.log('[Socket] Connected:', this.socket?.id);
+      // Re-join party room on reconnect (currentPartyId is null on first connect)
+      if (this.currentPartyId && this.currentUserId) {
+        this.socket?.emit('party:join', {
+          partyId: this.currentPartyId,
+          userId: this.currentUserId,
+        });
+        // Restart heartbeat since it was stopped on disconnect
+        this.startHeartbeat(this.currentPartyId, this.currentUserId);
+        console.log('[Socket] Rejoined party room after reconnect:', this.currentPartyId);
+      }
     });
 
     this.socket.on('disconnect', (reason) => {

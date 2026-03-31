@@ -101,6 +101,8 @@ export function useSpotifyPlayer(): UseSpotifyPlayerResult {
       playerRef.current?.disconnect();
       playerRef.current = null;
       deviceIdRef.current = null;
+      // Prevent duplicate player creation if the SDK fires again after remount
+      delete (window as any).onSpotifyWebPlaybackSDKReady;
     };
   }, []);
 
