@@ -25,9 +25,9 @@ export function PartyJamLogo({ size = 'md', withGlow = true }: PartyJamLogoProps
   return (
     <div className="relative">
       {withGlow && (
-        <div className="absolute inset-0 bg-[#00ff41] blur-xl opacity-30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 blur-xl opacity-40"></div>
       )}
-      <div className={`relative bg-gradient-to-br from-[#00ff41] to-[#00cc34] ${sizeClasses[size]} ${roundedClasses[size]} flex items-center justify-center shadow-lg shadow-[#00ff41]/20`}>
+      <div className={`relative bg-gradient-to-br from-purple-600 to-pink-600 ${sizeClasses[size]} ${roundedClasses[size]} flex items-center justify-center shadow-lg shadow-purple-500/30`}>
         <svg 
           viewBox="0 0 24 24" 
           fill="none" 
@@ -35,7 +35,7 @@ export function PartyJamLogo({ size = 'md', withGlow = true }: PartyJamLogoProps
           strokeWidth="2" 
           strokeLinecap="round" 
           strokeLinejoin="round"
-          className={`${iconSizes[size]} text-black`}
+          className={`${iconSizes[size]} text-white`}
         >
           <path d="M9 18V5l12-2v13"></path>
           <circle cx="6" cy="18" r="3"></circle>

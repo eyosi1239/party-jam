@@ -58,14 +58,14 @@ export function JoinCodeModal({ isOpen, onClose, onJoin }: JoinCodeModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-[#1a1a1a] text-[#9ca3af] hover:bg-[#2a2a2a] transition-all duration-200 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-all duration-200 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || code.trim().length === 0}
-            className="px-6 py-2.5 rounded-xl bg-[#00ff41] text-black font-medium hover:bg-[#00e639] transition-all duration-200 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium transition-all duration-200 disabled:opacity-50"
           >
             {loading ? 'Joining...' : 'Join'}
           </button>
@@ -85,7 +85,7 @@ export function JoinCodeModal({ isOpen, onClose, onJoin }: JoinCodeModalProps) {
           onKeyDown={handleKeyDown}
           placeholder="ABC123"
           maxLength={6}
-          className="w-full text-center text-3xl font-bold tracking-[0.4em] py-4 px-3 bg-[#0a0a0a] border-2 border-[#1a1a1a] rounded-xl text-white placeholder-[#3a3a3a] outline-none focus:border-[#00ff41] focus:shadow-[0_0_12px_rgba(0,255,65,0.3)] transition-all duration-200 uppercase"
+          className="w-full text-center text-3xl font-bold tracking-[0.4em] py-4 px-3 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-white/20 outline-none focus:border-purple-500 focus:shadow-[0_0_12px_rgba(168,85,247,0.3)] transition-all duration-200 uppercase"
         />
         {error && (
           <p className="text-red-400 text-sm text-center">{error}</p>

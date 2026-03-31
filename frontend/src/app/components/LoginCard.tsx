@@ -8,14 +8,16 @@ interface LoginCardProps {
   onSpotifyLogin?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
+  onBack?: () => void;
 }
 
-export function LoginCard({ 
-  onLogin, 
-  onGoogleLogin, 
-  onSpotifyLogin, 
-  onForgotPassword, 
-  onSignUp 
+export function LoginCard({
+  onLogin,
+  onGoogleLogin,
+  onSpotifyLogin,
+  onForgotPassword,
+  onSignUp,
+  onBack,
 }: LoginCardProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -88,42 +90,37 @@ export function LoginCard({
   };
 
   return (
-    <div className="w-full max-w-[400px] mx-auto px-4">
-      {/* Logo */}
-      <div className="flex justify-center mb-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-[#00ff41] blur-xl opacity-30"></div>
-          <div className="relative bg-gradient-to-br from-[#00ff41] to-[#00cc34] w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shadow-[#00ff41]/20">
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-              className="w-8 h-8 text-black"
+    <div className="min-h-screen text-white">
+      <div className="max-w-md mx-auto p-6 min-h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
             >
-              <path d="M9 18V5l12-2v13"></path>
-              <circle cx="6" cy="18" r="3"></circle>
-              <circle cx="18" cy="16" r="3"></circle>
-            </svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+            <span className="font-semibold text-lg">Party Jam</span>
           </div>
         </div>
-      </div>
 
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] rounded-3xl p-8 shadow-2xl border border-[#1a1a1a] relative overflow-hidden">
-        {/* Subtle neon pattern background */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#00ff41] rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#00ff41] rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="relative">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl text-white mb-2">Welcome back</h1>
-            <p className="text-[#9ca3af]">Join the room and control the vibe</p>
+        <div className="flex-1 flex flex-col justify-center">
+          {/* Header text */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
+            <p className="text-white/60">Sign in to create your party</p>
           </div>
 
           {/* Auth Error Message */}
@@ -137,7 +134,7 @@ export function LoginCard({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="email" className="block text-white/80 text-sm mb-2">
                 Email
               </label>
               <input
@@ -153,12 +150,12 @@ export function LoginCard({
                   setFocusedField(null);
                   handleEmailBlur();
                 }}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none ${
                   emailError 
                     ? 'border-red-500 shadow-[0_0_0_2px_rgba(239,68,68,0.1)]' 
                     : focusedField === 'email'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="you@example.com"
               />
@@ -174,7 +171,7 @@ export function LoginCard({
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="password" className="block text-white/80 text-sm mb-2">
                 Password
               </label>
               <input
@@ -187,12 +184,12 @@ export function LoginCard({
                 }}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none ${
                   passwordError
                     ? 'border-red-500 shadow-[0_0_0_2px_rgba(239,68,68,0.1)]'
                     : focusedField === 'password'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="••••••••"
               />
@@ -211,7 +208,7 @@ export function LoginCard({
               <button
                 type="button"
                 onClick={() => onForgotPassword?.(email)}
-                className="text-sm text-[#9ca3af] hover:text-[#00ff41] transition-colors duration-200"
+                className="text-sm text-white/60 hover:text-purple-400 transition-colors duration-200"
               >
                 Forgot password?
               </button>
@@ -219,7 +216,7 @@ export function LoginCard({
 
             {/* Room Code Field */}
             <div>
-              <label htmlFor="roomCode" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="roomCode" className="block text-white/80 text-sm mb-2">
                 Room code
               </label>
               <input
@@ -229,15 +226,15 @@ export function LoginCard({
                 onChange={(e) => handleRoomCodeChange(e.target.value)}
                 onFocus={() => setFocusedField('roomCode')}
                 onBlur={() => setFocusedField(null)}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none uppercase tracking-widest ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none uppercase tracking-widest ${
                   focusedField === 'roomCode'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="ABC123"
                 maxLength={6}
               />
-              <p className="mt-2 text-xs text-[#6b7280]">
+              <p className="mt-2 text-xs text-white/40">
                 Optional: jump straight into a party
               </p>
             </div>
@@ -246,7 +243,7 @@ export function LoginCard({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#00ff41] hover:bg-[#00e639] active:bg-[#00cc34] disabled:bg-[#00661a] disabled:cursor-not-allowed text-black py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-[#00ff41]/30 hover:shadow-[#00ff41]/50 hover:shadow-xl font-medium"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 font-medium"
             >
               {isLoading ? 'Logging in...' : 'Log in'}
             </button>
@@ -254,10 +251,10 @@ export function LoginCard({
             {/* Divider */}
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#1a1a1a]"></div>
+                <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="px-4 bg-[#0a0a0a] text-[#6b7280] text-sm">or</span>
+                <span className="px-4 bg-zinc-900 text-white/40 text-sm">or</span>
               </div>
             </div>
 
@@ -279,7 +276,7 @@ export function LoginCard({
             <button
               type="button"
               onClick={() => onGoogleLogin?.(roomCode || undefined)}
-              className="w-full bg-transparent border-2 border-[#00ff41] text-[#00ff41] hover:bg-[#00ff41]/10 active:bg-[#00ff41]/20 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3"
+              className="w-full bg-white text-zinc-900 hover:bg-white/90 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3 border-0"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -305,12 +302,12 @@ export function LoginCard({
 
           {/* Sign Up Link */}
           <div className="mt-8 text-center">
-            <p className="text-[#9ca3af] text-sm">
+            <p className="text-white/60 text-sm">
               Don't have an account?{' '}
               <button
                 type="button"
                 onClick={onSignUp}
-                className="text-[#00ff41] hover:text-[#00e639] transition-colors duration-200 font-medium"
+                className="text-purple-400 hover:text-purple-300 transition-colors duration-200 font-medium"
               >
                 Sign up
               </button>
@@ -321,3 +318,4 @@ export function LoginCard({
     </div>
   );
 }
+

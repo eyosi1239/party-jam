@@ -26,15 +26,15 @@ export function QueueItemLarge({
   onPin
 }: QueueItemLargeProps) {
   return (
-    <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-[#1a1a1a] rounded-2xl p-4 hover:border-[#00ff41]/30 transition-all duration-200 group">
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 group">
       <div className="flex items-center gap-4">
         {/* Drag Handle */}
-        <button className="text-[#6b7280] hover:text-[#00ff41] transition-colors cursor-grab active:cursor-grabbing">
+        <button className="text-white/40 hover:text-purple-400 transition-colors cursor-grab active:cursor-grabbing">
           <GripVertical className="w-5 h-5" />
         </button>
 
         {/* Position */}
-        <div className="w-8 text-center text-[#9ca3af] font-medium">
+        <div className="w-8 text-center text-white/60 font-medium">
           {position}
         </div>
 
@@ -50,18 +50,18 @@ export function QueueItemLarge({
           <div className="flex items-center gap-2">
             <h3 className="text-white font-medium truncate text-lg">{title}</h3>
             {isPinned && (
-              <Pin className="w-4 h-4 text-[#00ff41] fill-[#00ff41]" />
+              <Pin className="w-4 h-4 text-purple-400 fill-purple-400" />
             )}
           </div>
-          <p className="text-[#9ca3af] truncate">{artist}</p>
+          <p className="text-white/60 truncate">{artist}</p>
         </div>
 
         {/* Upvotes */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] rounded-xl">
-          <ChevronUp className="w-5 h-5 text-[#00ff41]" />
+        <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-xl">
+          <ChevronUp className="w-5 h-5 text-purple-400" />
           <span className="text-white font-medium text-lg">{upvotes}</span>
           {trendingUp && (
-            <span className="text-[#00ff41] text-xs">↗</span>
+            <span className="text-purple-400 text-xs">↗</span>
           )}
         </div>
 
@@ -71,8 +71,8 @@ export function QueueItemLarge({
             onClick={onPin}
             className={`p-2 rounded-xl transition-all duration-200 ${
               isPinned
-                ? 'bg-[#00ff41]/20 text-[#00ff41] border border-[#00ff41]/50'
-                : 'text-[#6b7280] hover:text-[#00ff41] hover:bg-[#1a1a1a]'
+                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                : 'text-white/40 hover:text-purple-400 hover:bg-white/10'
             }`}
             title={isPinned ? 'Unpin' : 'Pin to top'}
           >
@@ -81,7 +81,7 @@ export function QueueItemLarge({
 
           <button
             onClick={onSkipNext}
-            className="p-2 rounded-xl text-[#6b7280] hover:text-[#00ff41] hover:bg-[#1a1a1a] transition-all duration-200"
+            className="p-2 rounded-xl text-white/40 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
             title="Play next"
           >
             <SkipForward className="w-5 h-5" />
@@ -89,7 +89,7 @@ export function QueueItemLarge({
 
           <button
             onClick={onRemove}
-            className="p-2 rounded-xl text-[#6b7280] hover:text-red-500 hover:bg-red-500/10 transition-all duration-200"
+            className="p-2 rounded-xl text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-all duration-200"
             title="Remove from queue"
           >
             <Trash2 className="w-5 h-5" />

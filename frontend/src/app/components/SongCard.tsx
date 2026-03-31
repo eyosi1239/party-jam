@@ -23,7 +23,7 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
   };
 
   return (
-    <div className={`bg-gradient-to-b from-[#0a0a0a] to-[#050505] border rounded-2xl p-4 transition-all duration-200 group ${disabled ? 'border-[#1a1a1a] opacity-60' : 'border-[#1a1a1a] hover:border-[#00ff41]/30'}`}>
+    <div className={`bg-white/5 border rounded-xl p-3 transition-all duration-200 group ${disabled ? 'border-white/5 opacity-60' : 'border-white/10 hover:bg-white/10 hover:border-white/20'}`}>
       <div className="flex gap-4">
         {/* Album Art */}
         <div className="flex-shrink-0">
@@ -39,10 +39,10 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
           <div className="flex items-center gap-2">
             <h3 className="text-white font-medium truncate">{title}</h3>
             {explicit && (
-              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[#9ca3af]/20 text-[#9ca3af] font-medium">E</span>
+              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 font-medium">E</span>
             )}
           </div>
-          <p className="text-[#9ca3af] text-sm truncate">{artist}</p>
+          <p className="text-white/60 text-sm truncate">{artist}</p>
 
           {/* Tags */}
           {tags.length > 0 && (
@@ -66,10 +66,10 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
             disabled={isAdding || disabled}
             className={`p-2 rounded-xl border-2 transition-all duration-200 ${
               disabled
-                ? 'border-[#2a2a2a] text-[#4a4a4a] cursor-not-allowed'
+                ? 'border-white/10 text-white/20 cursor-not-allowed'
                 : isAdding
-                ? 'bg-[#00ff41] border-[#00ff41] text-black'
-                : 'border-[#00ff41] text-[#00ff41] hover:bg-[#00ff41]/10'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-transparent text-white'
+                : 'border-purple-500/60 text-purple-400 hover:bg-purple-500/10'
             }`}
           >
             <Plus className="w-5 h-5" />
@@ -77,7 +77,7 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
           
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-xl text-[#6b7280] hover:text-[#00ff41] hover:bg-[#1a1a1a] transition-all duration-200 opacity-0 group-hover:opacity-100"
+            className="p-2 rounded-xl text-white/40 hover:text-purple-400 hover:bg-white/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
