@@ -12,6 +12,7 @@ export type VoteContext = 'QUEUE' | 'TESTING';
 export interface Party {
   partyId: string;
   hostId: string;
+  name?: string;
   status: PartyStatus;
   mood: string;
   kidFriendly: boolean;

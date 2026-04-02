@@ -28,7 +28,7 @@ export interface UsePartyResult {
   userId: string | null;
 
   // Actions
-  createParty: (userId: string, mood?: string) => Promise<void>;
+  createParty: (userId: string, mood?: string, name?: string) => Promise<void>;
   joinParty: (partyId: string, userId: string) => Promise<void>;
   startParty: () => Promise<void>;
   vote: (trackId: string, vote: 'UP' | 'DOWN' | 'NONE', context: 'QUEUE' | 'TESTING') => Promise<void>;
@@ -47,7 +47,7 @@ export function useParty(): UsePartyResult {
   const [partyEndedByHost, setPartyEndedByHost] = useState(false);
 
   // Create a new party (host)
-  const createParty = useCallback(async (uid: string, mood = 'chill') => {
+  const createParty = useCallback(async (uid: string, mood = 'chill', name?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -55,6 +55,7 @@ export function useParty(): UsePartyResult {
 
       const result = await api.createParty({
         hostId: uid,
+        name,
         mood,
         kidFriendly: false,
         allowSuggestions: true,

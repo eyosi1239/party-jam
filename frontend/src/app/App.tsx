@@ -65,7 +65,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-zinc-950 via-purple-950/20 to-zinc-950">
+      <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950">
         <div className="text-purple-400">Loading...</div>
       </div>
     );
@@ -106,10 +106,10 @@ function AppContent() {
   // Open create modal
   const handleCreateParty = () => setShowCreateModal(true);
 
-  // Called by CreatePartyModal with chosen mood
-  const handleCreateWithMood = async (mood: string) => {
+  // Called by CreatePartyModal with chosen name and mood
+  const handleCreateWithMood = async (name: string, mood: string) => {
     const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `host_${Date.now()}`;
-    await party.createParty(userId, mood);
+    await party.createParty(userId, mood, name || undefined);
   };
 
   // Open join modal
@@ -131,7 +131,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 via-purple-950/20 to-zinc-950 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-zinc-950 relative overflow-hidden">
       {/* Background blobs — always visible */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>

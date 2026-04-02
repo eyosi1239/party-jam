@@ -12,6 +12,7 @@ export type VoteContext = 'QUEUE' | 'TESTING';
 export interface Party {
   partyId: string;
   hostId: string;
+  name?: string;
   status: PartyStatus;
   mood: string;
   kidFriendly: boolean;
@@ -52,6 +53,7 @@ export interface PartyState {
 // API Request/Response types
 export interface CreatePartyRequest {
   hostId: string;
+  name?: string;
   mood?: string;
   kidFriendly?: boolean;
   allowSuggestions?: boolean;
