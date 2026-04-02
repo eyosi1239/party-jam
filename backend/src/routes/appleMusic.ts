@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { appleMusicTokenLimiter } from '../middleware/rateLimits.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ const router = Router();
  *   APPLE_PRIVATE_KEY      – The full contents of the AuthKey_XXXXXX.p8 file
  *                            (newlines replaced with \n in .env)
  */
-router.get('/apple-music/token', (_req: Request, res: Response) => {
+router.get('/apple-music/token', appleMusicTokenLimiter, (_req: Request, res: Response) => {
   const teamId = process.env.APPLE_TEAM_ID;
   const keyId = process.env.APPLE_KEY_ID;
   const privateKey = process.env.APPLE_PRIVATE_KEY;

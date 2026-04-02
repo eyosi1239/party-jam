@@ -7,6 +7,7 @@ import { ENV } from './config.js';
 import { store } from './store.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
 import appleMusicRoutes from './routes/appleMusic.js';
+import { globalLimiter } from './middleware/rateLimits.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,6 +24,7 @@ setSocketIO(io);
 // Middleware
 app.use(cors({ origin: ENV.FRONTEND_ORIGIN }));
 app.use(express.json());
+app.use(globalLimiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

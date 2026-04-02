@@ -8,6 +8,7 @@ import { store } from '../store.js';
 import { generateId, generateJoinCode, createError, randomSample } from '../utils.js';
 import { CONFIG } from '../config.js';
 import type { Party, PartyMember, VoteType, VoteContext, Song, Suggestion } from '../types.js';
+import { createPartyLimiter, joinPartyLimiter, voteLimiter, suggestLimiter, seedLimiter } from '../middleware/rateLimits.js';
 
 let io: Server;
 
@@ -18,8 +19,8 @@ export function setSocketIO(socketIO: Server) {
 const router = Router();
 
 // POST /party - Create party
-router.post('/party', (req: Request, res: Response) => {
-  const { hostId, mood, kidFriendly, allowSuggestions } = req.body;
+router.post('/party', createPartyLimiter, (req: Request, res: Response) => {
+  const { hostId, name, mood, kidFriendly, allowSuggestions } = req.body;
 
   if (!hostId) {
     return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
@@ -32,6 +33,7 @@ router.post('/party', (req: Request, res: Response) => {
   const party: Party = {
     partyId,
     hostId,
+    ...(name ? { name } : {}),
     status: 'CREATED',
     mood: mood || 'chill',
     kidFriendly: kidFriendly ?? false,
@@ -76,7 +78,7 @@ router.get('/party/resolve', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/join - Join party
-router.post('/party/:partyId/join', (req: Request, res: Response) => {
+router.post('/party/:partyId/join', joinPartyLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId } = req.body;
 
@@ -175,7 +177,7 @@ router.post('/party/:partyId/start', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/seed - Seed queue with tracks (host only)
-router.post('/party/:partyId/seed', (req: Request, res: Response) => {
+router.post('/party/:partyId/seed', seedLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, tracks } = req.body;
 
@@ -284,7 +286,7 @@ router.post('/party/:partyId/heartbeat', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/vote - Vote on a song
-router.post('/party/:partyId/vote', (req: Request, res: Response) => {
+router.post('/party/:partyId/vote', voteLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId, trackId, vote, context } = req.body;
 
@@ -408,7 +410,7 @@ router.post('/party/:partyId/vote', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/suggest - Suggest a song
-router.post('/party/:partyId/suggest', (req: Request, res: Response) => {
+router.post('/party/:partyId/suggest', suggestLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId, trackId, title, artist, albumArtUrl, explicit: isExplicit } = req.body;
 
