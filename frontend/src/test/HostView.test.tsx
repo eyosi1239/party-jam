@@ -95,10 +95,10 @@ describe('HostView — end party (Fix #3)', () => {
     const onLeaveRoom = vi.fn();
     renderHostView({ onLeaveRoom });
 
-    // Open end-party modal via leave button in NavBar
-    // NavBar has two Leave Room buttons (text + icon); click the visible text one
-    await userEvent.click(screen.getAllByRole('button', { name: /leave/i })[0]);
-    await userEvent.click(screen.getByRole('button', { name: /end party/i }));
+    // Header has a single "End Party" button that opens the modal
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[0]);
+    // Modal confirm button is the second "End Party" button in the DOM
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[1]);
 
     await waitFor(() => expect(onLeaveRoom).toHaveBeenCalledOnce());
   });
@@ -108,9 +108,10 @@ describe('HostView — end party (Fix #3)', () => {
     const onLeaveRoom = vi.fn();
     renderHostView({ onLeaveRoom });
 
-    // NavBar has two Leave Room buttons (text + icon); click the visible text one
-    await userEvent.click(screen.getAllByRole('button', { name: /leave/i })[0]);
-    await userEvent.click(screen.getByRole('button', { name: /end party/i }));
+    // Header has a single "End Party" button that opens the modal
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[0]);
+    // Modal confirm button is the second "End Party" button in the DOM
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[1]);
 
     await waitFor(() =>
       expect(screen.getByText(/Failed to end the party/i)).toBeInTheDocument()
@@ -120,16 +121,16 @@ describe('HostView — end party (Fix #3)', () => {
 
   it('shows confirmation modal before ending party', async () => {
     renderHostView();
-    // NavBar has two Leave Room buttons (text + icon); click the visible text one
-    await userEvent.click(screen.getAllByRole('button', { name: /leave/i })[0]);
+    // Header "End Party" button opens the confirmation modal
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[0]);
     expect(screen.getByText(/End Party\?/i)).toBeInTheDocument();
   });
 
   it('cancel in modal keeps host in view', async () => {
     const onLeaveRoom = vi.fn();
     renderHostView({ onLeaveRoom });
-    // NavBar has two Leave Room buttons (text + icon); click the visible text one
-    await userEvent.click(screen.getAllByRole('button', { name: /leave/i })[0]);
+    // Header "End Party" button opens the confirmation modal
+    await userEvent.click(screen.getAllByRole('button', { name: /end party/i })[0]);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onLeaveRoom).not.toHaveBeenCalled();
   });
@@ -139,14 +140,16 @@ describe('HostView — settings toggles', () => {
   it('calls onUpdateSettings with locked:true when lock is toggled on', async () => {
     const onUpdateSettings = vi.fn().mockResolvedValue(undefined);
     renderHostView({ onUpdateSettings });
-    await userEvent.click(screen.getByRole('button', { name: /lock room/i }));
+    // Settings appear in both desktop and mobile layouts; click the first one
+    await userEvent.click(screen.getAllByRole('button', { name: /lock room/i })[0]);
     expect(onUpdateSettings).toHaveBeenCalledWith({ locked: true });
   });
 
   it('calls onUpdateSettings with allowSuggestions:false', async () => {
     const onUpdateSettings = vi.fn().mockResolvedValue(undefined);
     renderHostView({ onUpdateSettings });
-    await userEvent.click(screen.getByRole('button', { name: /allow suggestions/i }));
+    // Settings appear in both desktop and mobile layouts; click the first one
+    await userEvent.click(screen.getAllByRole('button', { name: /allow suggestions/i })[0]);
     expect(onUpdateSettings).toHaveBeenCalledWith({ allowSuggestions: false });
   });
 });

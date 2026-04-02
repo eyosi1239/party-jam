@@ -47,8 +47,8 @@ describe('GuestView — lobby (no party)', () => {
       <GuestView partyState={null} partyId={null} userId={null}
         onVote={noop} onCreateParty={noop} onJoinParty={noop} />
     );
-    expect(screen.getByRole('button', { name: /create party/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /join party/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create a party/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /join a party/i })).toBeInTheDocument();
   });
 
   it('calls onCreateParty when button clicked', async () => {
@@ -57,7 +57,7 @@ describe('GuestView — lobby (no party)', () => {
       <GuestView partyState={null} partyId={null} userId={null}
         onVote={noop} onCreateParty={onCreateParty} onJoinParty={noop} />
     );
-    await userEvent.click(screen.getByRole('button', { name: /create party/i }));
+    await userEvent.click(screen.getByRole('button', { name: /create a party/i }));
     expect(onCreateParty).toHaveBeenCalledOnce();
   });
 });
@@ -68,6 +68,8 @@ describe('GuestView — in party', () => {
       <GuestView partyState={makeLivePartyState({ allowSuggestions: false })}
         partyId="p1" userId="guest-1" onVote={noop} />
     );
+    // The banner is in the Browse tab — switch to it first
+    await userEvent.click(screen.getByRole('button', { name: /browse/i }));
     expect(await screen.findByText(/Host has disabled suggestions/i)).toBeInTheDocument();
   });
 
@@ -76,6 +78,8 @@ describe('GuestView — in party', () => {
       <GuestView partyState={makeLivePartyState({ kidFriendly: true })}
         partyId="p1" userId="guest-1" onVote={noop} />
     );
+    // Tracks are shown in the Browse tab — switch to it first
+    await userEvent.click(screen.getByRole('button', { name: /browse/i }));
     // Wait for the explicit song card to appear
     expect(await screen.findByText('Explicit Banger')).toBeInTheDocument();
     // The card should show a "Blocked" tag
@@ -107,6 +111,7 @@ describe('GuestView — in party', () => {
     render(
       <GuestView partyState={stateWithNowPlaying} partyId="p1" userId="guest-1" onVote={noop} />
     );
-    expect(screen.getByText('Now Playing Song')).toBeInTheDocument();
+    // Title appears in both NowPlayingCard and the bottom mini player
+    expect(screen.getAllByText('Now Playing Song').length).toBeGreaterThan(0);
   });
 });
