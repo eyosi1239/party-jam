@@ -39,11 +39,11 @@ export function HostPlayerControls({
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-[#1a1a1a] rounded-3xl p-8">
+    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-orange-600/20 p-8 border border-white/10">
       <div className="flex flex-col lg:flex-row gap-8 items-center">
         {/* Album Art */}
         <div className="relative flex-shrink-0">
-          <div className="absolute inset-0 bg-[#00ff41] blur-2xl opacity-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 blur-2xl opacity-20"></div>
           <img 
             src={albumArt} 
             alt={`${title} album art`}
@@ -55,20 +55,20 @@ export function HostPlayerControls({
         <div className="flex-1 w-full">
           {/* Song Info */}
           <div className="mb-6">
-            <div className="text-xs text-[#00ff41] mb-2 font-medium tracking-wider">NOW PLAYING</div>
+            <div className="text-xs text-white/50 mb-2 font-medium tracking-wider">NOW PLAYING</div>
             <h2 className="text-3xl text-white font-medium mb-2">{title}</h2>
-            <p className="text-xl text-[#9ca3af]">{artist}</p>
+            <p className="text-xl text-white/60">{artist}</p>
           </div>
 
           {/* Progress Bar */}
           <div className="mb-6">
-            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden mb-2">
-              <div 
-                className="h-full bg-[#00ff41] rounded-full transition-all duration-300 shadow-lg shadow-[#00ff41]/50"
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="flex justify-between text-sm text-[#9ca3af]">
+            <div className="flex justify-between text-sm text-white/50">
               <span>{currentTime}</span>
               <span>{totalTime}</span>
             </div>
@@ -78,14 +78,14 @@ export function HostPlayerControls({
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
-              className="p-3 rounded-2xl text-[#00ff41] hover:bg-[#00ff41]/10 transition-all duration-200"
+              className="p-3 rounded-2xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
             >
               <SkipBack className="w-6 h-6" />
             </button>
 
             <button
               onClick={onPlayPause}
-              className="p-5 rounded-2xl bg-[#00ff41] text-black hover:bg-[#00e639] transition-all duration-200 shadow-lg shadow-[#00ff41]/30"
+              className="p-5 rounded-full bg-white text-zinc-900 hover:bg-white/90 transition-all duration-200 shadow-lg"
             >
               {isPlaying ? (
                 <Pause className="w-8 h-8" />
@@ -96,7 +96,7 @@ export function HostPlayerControls({
 
             <button
               onClick={onSkip}
-              className="p-3 rounded-2xl text-[#00ff41] hover:bg-[#00ff41]/10 transition-all duration-200"
+              className="p-3 rounded-2xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
             >
               <SkipForward className="w-6 h-6" />
             </button>
@@ -104,16 +104,16 @@ export function HostPlayerControls({
 
           {/* Volume Control */}
           <div className="flex items-center gap-4">
-            <Volume2 className="w-5 h-5 text-[#9ca3af]" />
+            <Volume2 className="w-5 h-5 text-white/50" />
             <input
               type="range"
               min="0"
               max="100"
               value={currentVolume}
               onChange={handleVolumeChange}
-              className="flex-1 h-2 bg-[#1a1a1a] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#00ff41] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-[#00ff41]/50"
+              className="flex-1 h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/50"
             />
-            <span className="text-[#9ca3af] text-sm w-12 text-right">{currentVolume}%</span>
+            <span className="text-white/50 text-sm w-12 text-right">{currentVolume}%</span>
           </div>
         </div>
       </div>

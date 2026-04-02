@@ -6,16 +6,20 @@ interface LoginCardProps {
   onLogin?: (email: string, password: string, roomCode?: string) => void;
   onGoogleLogin?: (roomCode?: string) => void;
   onSpotifyLogin?: () => void;
+  onAppleMusicLogin?: () => void;
   onForgotPassword?: (email: string) => void;
   onSignUp?: () => void;
+  onBack?: () => void;
 }
 
-export function LoginCard({ 
-  onLogin, 
-  onGoogleLogin, 
-  onSpotifyLogin, 
-  onForgotPassword, 
-  onSignUp 
+export function LoginCard({
+  onLogin,
+  onGoogleLogin,
+  onSpotifyLogin,
+  onAppleMusicLogin,
+  onForgotPassword,
+  onSignUp,
+  onBack,
 }: LoginCardProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -88,42 +92,37 @@ export function LoginCard({
   };
 
   return (
-    <div className="w-full max-w-[400px] mx-auto px-4">
-      {/* Logo */}
-      <div className="flex justify-center mb-8">
-        <div className="relative">
-          <div className="absolute inset-0 bg-[#00ff41] blur-xl opacity-30"></div>
-          <div className="relative bg-gradient-to-br from-[#00ff41] to-[#00cc34] w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shadow-[#00ff41]/20">
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-              className="w-8 h-8 text-black"
+    <div className="min-h-screen text-white">
+      <div className="max-w-md mx-auto p-6 min-h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
             >
-              <path d="M9 18V5l12-2v13"></path>
-              <circle cx="6" cy="18" r="3"></circle>
-              <circle cx="18" cy="16" r="3"></circle>
-            </svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+            <span className="font-semibold text-lg">Party Jam</span>
           </div>
         </div>
-      </div>
 
-      {/* Card */}
-      <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] rounded-3xl p-8 shadow-2xl border border-[#1a1a1a] relative overflow-hidden">
-        {/* Subtle neon pattern background */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#00ff41] rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#00ff41] rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="relative">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl text-white mb-2">Welcome back</h1>
-            <p className="text-[#9ca3af]">Join the room and control the vibe</p>
+        <div className="flex-1 flex flex-col justify-center">
+          {/* Header text */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
+            <p className="text-white/60">Sign in to create your party</p>
           </div>
 
           {/* Auth Error Message */}
@@ -137,7 +136,7 @@ export function LoginCard({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="email" className="block text-white/80 text-sm mb-2">
                 Email
               </label>
               <input
@@ -153,12 +152,12 @@ export function LoginCard({
                   setFocusedField(null);
                   handleEmailBlur();
                 }}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none ${
                   emailError 
                     ? 'border-red-500 shadow-[0_0_0_2px_rgba(239,68,68,0.1)]' 
                     : focusedField === 'email'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="you@example.com"
               />
@@ -174,7 +173,7 @@ export function LoginCard({
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="password" className="block text-white/80 text-sm mb-2">
                 Password
               </label>
               <input
@@ -187,12 +186,12 @@ export function LoginCard({
                 }}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none ${
                   passwordError
                     ? 'border-red-500 shadow-[0_0_0_2px_rgba(239,68,68,0.1)]'
                     : focusedField === 'password'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="••••••••"
               />
@@ -211,7 +210,7 @@ export function LoginCard({
               <button
                 type="button"
                 onClick={() => onForgotPassword?.(email)}
-                className="text-sm text-[#9ca3af] hover:text-[#00ff41] transition-colors duration-200"
+                className="text-sm text-white/60 hover:text-purple-400 transition-colors duration-200"
               >
                 Forgot password?
               </button>
@@ -219,7 +218,7 @@ export function LoginCard({
 
             {/* Room Code Field */}
             <div>
-              <label htmlFor="roomCode" className="block text-[#e5e7eb] text-sm mb-2">
+              <label htmlFor="roomCode" className="block text-white/80 text-sm mb-2">
                 Room code
               </label>
               <input
@@ -229,15 +228,15 @@ export function LoginCard({
                 onChange={(e) => handleRoomCodeChange(e.target.value)}
                 onFocus={() => setFocusedField('roomCode')}
                 onBlur={() => setFocusedField(null)}
-                className={`w-full px-4 py-3 bg-[#0a0a0a] border-2 rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none uppercase tracking-widest ${
+                className={`w-full px-4 py-3 bg-white/5 border-2 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none uppercase tracking-widest ${
                   focusedField === 'roomCode'
-                    ? 'border-[#00ff41] shadow-[0_0_12px_rgba(0,255,65,0.3)]'
-                    : 'border-[#1a1a1a] hover:border-[#2a2a2a]'
+                    ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 hover:border-white/20'
                 }`}
                 placeholder="ABC123"
                 maxLength={6}
               />
-              <p className="mt-2 text-xs text-[#6b7280]">
+              <p className="mt-2 text-xs text-white/40">
                 Optional: jump straight into a party
               </p>
             </div>
@@ -246,7 +245,7 @@ export function LoginCard({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#00ff41] hover:bg-[#00e639] active:bg-[#00cc34] disabled:bg-[#00661a] disabled:cursor-not-allowed text-black py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-[#00ff41]/30 hover:shadow-[#00ff41]/50 hover:shadow-xl font-medium"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 font-medium"
             >
               {isLoading ? 'Logging in...' : 'Log in'}
             </button>
@@ -254,19 +253,19 @@ export function LoginCard({
             {/* Divider */}
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#1a1a1a]"></div>
+                <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center">
-                <span className="px-4 bg-[#0a0a0a] text-[#6b7280] text-sm">or</span>
+                <span className="px-4 bg-zinc-900 text-white/40 text-sm">or</span>
               </div>
             </div>
 
-            {/* Login with Spotify */}
+            {/* Spotify Button */}
             {onSpotifyLogin && (
               <button
                 type="button"
                 onClick={onSpotifyLogin}
-                className="w-full bg-[#1DB954] hover:bg-[#1ed760] active:bg-[#1aa34a] py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3 text-white border-2 border-[#1DB954]"
+                className="w-full bg-[#1DB954] hover:bg-[#1ed760] active:bg-[#1aa34a] py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3 text-white"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -275,11 +274,25 @@ export function LoginCard({
               </button>
             )}
 
+            {/* Apple Music Button */}
+            {onAppleMusicLogin && (
+              <button
+                type="button"
+                onClick={onAppleMusicLogin}
+                className="w-full bg-gradient-to-r from-pink-600 to-red-500 hover:from-pink-700 hover:to-red-600 active:from-pink-800 active:to-red-700 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3 text-white"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+                </svg>
+                Continue with Apple Music
+              </button>
+            )}
+
             {/* Google Button */}
             <button
               type="button"
               onClick={() => onGoogleLogin?.(roomCode || undefined)}
-              className="w-full bg-transparent border-2 border-[#00ff41] text-[#00ff41] hover:bg-[#00ff41]/10 active:bg-[#00ff41]/20 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3"
+              className="w-full bg-white text-zinc-900 hover:bg-white/90 py-3.5 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-3 border-0"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -305,12 +318,12 @@ export function LoginCard({
 
           {/* Sign Up Link */}
           <div className="mt-8 text-center">
-            <p className="text-[#9ca3af] text-sm">
+            <p className="text-white/60 text-sm">
               Don't have an account?{' '}
               <button
                 type="button"
                 onClick={onSignUp}
-                className="text-[#00ff41] hover:text-[#00e639] transition-colors duration-200 font-medium"
+                className="text-purple-400 hover:text-purple-300 transition-colors duration-200 font-medium"
               >
                 Sign up
               </button>
@@ -321,3 +334,4 @@ export function LoginCard({
     </div>
   );
 }
+

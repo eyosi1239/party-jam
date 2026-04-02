@@ -1,11 +1,10 @@
-import { NavBar } from '@/app/components/NavBar';
-import { FilterChip } from '@/app/components/FilterChip';
 import { SongCard } from '@/app/components/SongCard';
 import { QueueItem } from '@/app/components/QueueItem';
-import { PlayerBar } from '@/app/components/PlayerBar';
 import { Toast } from '@/app/components/Toast';
 import { SuggestionTestCard } from '@/app/components/SuggestionTestCard';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { NowPlayingCard } from '@/app/components/NowPlayingCard';
+import { MemberList } from '@/app/components/MemberList';
+import { Search, Users, LogOut, Music } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider, type Track } from '@/lib/music';
@@ -25,20 +24,19 @@ interface GuestViewProps {
 
 export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCreateParty, onJoinParty, onLeaveRoom }: GuestViewProps) {
   const spotify = useSpotify();
-  // Re-derive on each render so Spotify login mid-session is picked up automatically
   const musicProvider = getMusicProvider();
-  const [selectedFilter, setSelectedFilter] = useState('Recommended');
   const [searchQuery, setSearchQuery] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [activeTab, setActiveTab] = useState<'recs' | 'queue'>('recs');
+  const [activeTab, setActiveTab] = useState<'queue' | 'browse' | 'members'>('queue');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const party = partyState?.party ?? null;
   const queue = partyState?.queue ?? [];
   const nowPlaying = partyState?.nowPlaying ?? null;
+  const members = partyState?.members ?? [];
   const testingSuggestions = partyState?.testingSuggestions ?? [];
 
   // Load initial recommendations when mood is known
@@ -52,12 +50,11 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
       .finally(() => setSearchLoading(false));
   }, [party?.mood]);
 
-  // Debounced search — fires 350 ms after user stops typing
+  // Debounced search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!searchQuery.trim()) {
-      // Restore recommendations when search is cleared
       if (party) {
         setSearchLoading(true);
         musicProvider
@@ -129,32 +126,47 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
     onVote(trackId, 'UP', 'QUEUE');
   };
 
+  // Lobby — not in a party
   if (!partyState) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#050505] flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div>
-            <div className="text-[#00ff41] text-2xl font-semibold mb-2">Party Jam</div>
-            <div className="text-[#9ca3af] text-sm">Start a party or join one with a code</div>
+      <div className="min-h-screen flex flex-col items-center justify-between p-6 max-w-md mx-auto text-white">
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
+          <div className="mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-50" />
+              <div className="relative bg-gradient-to-br from-purple-600 to-pink-600 p-6 rounded-3xl">
+                <Music className="w-16 h-16 text-white" />
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
-            {onCreateParty && (
-              <button
-                onClick={onCreateParty}
-                className="w-48 px-6 py-3 rounded-xl bg-[#00ff41] text-black font-semibold hover:bg-[#00e639] transition-all duration-200"
-              >
-                + Create Party
-              </button>
-            )}
-            {onJoinParty && (
-              <button
-                onClick={onJoinParty}
-                className="w-48 px-6 py-3 rounded-xl bg-[#1a1a1a] text-[#00ff41] border border-[#00ff41]/30 font-semibold hover:bg-[#00ff41]/10 transition-all duration-200"
-              >
-                Join Party
-              </button>
-            )}
-          </div>
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+            Party Jam
+          </h1>
+          <p className="text-white/70 text-lg mb-2">One room. One queue. One vibe.</p>
+          <p className="text-white/50 text-sm">Collaborative music for real-time parties</p>
+        </div>
+        <div className="w-full space-y-4">
+          {onCreateParty && (
+            <button
+              onClick={onCreateParty}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg py-4 rounded-2xl shadow-lg shadow-purple-500/25 font-medium transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Create a Party
+            </button>
+          )}
+          {onJoinParty && (
+            <button
+              onClick={onJoinParty}
+              className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white text-lg py-4 rounded-2xl font-medium transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+              Join a Party
+            </button>
+          )}
+          <p className="text-center text-xs text-white/40">
+            Works with Spotify • Apple Music • Amazon Music • YouTube Music
+          </p>
         </div>
       </div>
     );
@@ -163,121 +175,139 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
   const suggestionsDisabled = !party?.allowSuggestions;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#050505] flex flex-col">
-      {/* Background Pattern */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-[#00ff41] rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-20 right-10 w-64 h-64 bg-[#00ff41] rounded-full blur-[100px]"></div>
+    <div className="min-h-screen text-white pb-28">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10">
+        <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-xl">
+              <Music className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-semibold">{party?.mood ? `${party.mood} Party` : 'Party Jam'}</div>
+              <div className="text-xs text-white/50">
+                Guest • {joinCode ?? partyState.party.partyId.slice(0, 6).toUpperCase()}
+              </div>
+            </div>
+          </div>
+          {onLeaveRoom && (
+            <button
+              onClick={onLeaveRoom}
+              className="p-2 rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
-      <NavBar
-        roomName={party?.mood ? `${party.mood} Party` : 'Party Jam'}
-        roomCode={joinCode ?? partyState.party.partyId.slice(0, 6).toUpperCase()}
-        onLeaveRoom={onLeaveRoom}
-        onSettings={() => console.log('Settings')}
-        onProfile={() => console.log('Profile')}
-      />
+      <div className="max-w-2xl mx-auto p-4 space-y-4">
+        {/* Suggestion testing cards */}
+        {testingSuggestions.length > 0 && (
+          <div className="space-y-3">
+            {testingSuggestions.map((song) => (
+              <SuggestionTestCard
+                key={song.trackId}
+                song={song}
+                onUpvote={() => onVote(song.trackId, 'UP', 'TESTING')}
+                onDownvote={() => onVote(song.trackId, 'DOWN', 'TESTING')}
+              />
+            ))}
+          </div>
+        )}
 
-      <div className="flex-1 overflow-hidden pb-20">
-        <div className="max-w-[1400px] mx-auto px-6 py-6">
-          {/* Suggestion Testing — shown when host sends a song for crowd review */}
-          {testingSuggestions.length > 0 && (
-            <div className="mb-6 space-y-3">
-              {testingSuggestions.map((song) => (
-                <SuggestionTestCard
-                  key={song.trackId}
-                  song={song}
-                  onUpvote={() => onVote(song.trackId, 'UP', 'TESTING')}
-                  onDownvote={() => onVote(song.trackId, 'DOWN', 'TESTING')}
-                />
-              ))}
+        {/* Now Playing */}
+        {nowPlaying && (
+          <NowPlayingCard
+            albumArt={nowPlaying.albumArtUrl}
+            title={nowPlaying.title}
+            artist={nowPlaying.artist}
+          />
+        )}
+
+        {/* 3-tab system */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-1 flex">
+          <button
+            onClick={() => setActiveTab('queue')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all duration-200 ${
+              activeTab === 'queue' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            Queue ({queue.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all duration-200 ${
+              activeTab === 'browse' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            Browse
+          </button>
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all duration-200 flex items-center justify-center gap-1 ${
+              activeTab === 'members' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Members</span>
+          </button>
+        </div>
+
+        {/* Queue tab */}
+        {activeTab === 'queue' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Up Next</h3>
+              <span className="text-sm text-white/50">{queue.length} songs</span>
             </div>
-          )}
+            {queue.map((song, index) => (
+              <QueueItem
+                key={song.trackId}
+                position={index + 1}
+                title={song.title}
+                artist={song.artist}
+                upvotes={song.upvotes}
+                isNowPlaying={nowPlaying?.trackId === song.trackId}
+                onUpvote={() => handleUpvote(song.trackId)}
+                allowDownvotes={false}
+              />
+            ))}
+            {queue.length === 0 && (
+              <div className="text-center py-12 text-white/50">Queue is empty</div>
+            )}
+          </div>
+        )}
 
-          {/* Search & Filters */}
-          <div className="mb-6 space-y-4">
+        {/* Browse tab */}
+        {activeTab === 'browse' && (
+          <div className="space-y-4">
+            {suggestionsDisabled && (
+              <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm text-center">
+                Host has disabled suggestions — voting only
+              </div>
+            )}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6b7280]" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
                 type="text"
                 placeholder="Search songs, artists…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-[#0a0a0a] border-2 border-[#1a1a1a] rounded-xl text-white placeholder-[#6b7280] transition-all duration-200 outline-none focus:border-[#00ff41] focus:shadow-[0_0_12px_rgba(0,255,65,0.3)]"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-white/30 transition-all duration-200 outline-none focus:border-purple-500 focus:shadow-[0_0_12px_rgba(168,85,247,0.3)]"
               />
             </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              <FilterChip
-                label="Recommended"
-                selected={selectedFilter === 'Recommended'}
-                onClick={() => setSelectedFilter('Recommended')}
-              />
-              <FilterChip
-                label="Trending"
-                selected={selectedFilter === 'Trending'}
-                onClick={() => setSelectedFilter('Trending')}
-              />
-              <FilterChip
-                label="New"
-                selected={selectedFilter === 'New'}
-                onClick={() => setSelectedFilter('New')}
-              />
-              <button className="px-4 py-2 rounded-xl bg-[#1a1a1a] text-[#9ca3af] border border-[#2a2a2a] hover:border-[#00ff41]/50 hover:text-[#00ff41] transition-all duration-200 whitespace-nowrap flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                More filters
-              </button>
-            </div>
-
-            {suggestionsDisabled && (
-              <div className="px-4 py-2 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-[#9ca3af] text-sm text-center">
-                Host has disabled suggestions — voting only
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Tabs */}
-          <div className="lg:hidden mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl p-1 flex">
-              <button
-                onClick={() => setActiveTab('recs')}
-                className={`flex-1 py-2 px-4 rounded-lg transition-all duration-200 ${
-                  activeTab === 'recs' ? 'bg-[#00ff41] text-black font-medium' : 'text-[#9ca3af]'
-                }`}
-              >
-                Recommendations
-              </button>
-              <button
-                onClick={() => setActiveTab('queue')}
-                className={`flex-1 py-2 px-4 rounded-lg transition-all duration-200 ${
-                  activeTab === 'queue' ? 'bg-[#00ff41] text-black font-medium' : 'text-[#9ca3af]'
-                }`}
-              >
-                Queue ({queue.length})
-              </button>
-            </div>
-          </div>
-
-          {/* Two-column layout */}
-          <div className="grid lg:grid-cols-[1fr,400px] gap-6">
-            {/* Recommendations Column */}
-            <div className={activeTab === 'queue' ? 'hidden lg:block' : ''}>
-              <h2 className="text-xl text-white font-medium mb-4">
-                {searchQuery ? `Results for "${searchQuery}"` : 'Recommendations'}
-              </h2>
-
-              {searchLoading && (
-                <div className="text-center py-12 text-[#9ca3af]">Searching...</div>
-              )}
-
+            <div>
+              <h3 className="font-semibold text-lg mb-3">
+                {searchQuery ? `Results for "${searchQuery}"` : 'Recommended'}
+              </h3>
+              {searchLoading && <div className="text-center py-12 text-white/60">Searching...</div>}
               {!searchLoading && tracks.length === 0 && (
-                <div className="text-center py-16">
-                  <Search className="w-12 h-12 mx-auto mb-4 text-[#6b7280] opacity-50" />
-                  <h3 className="text-white font-medium mb-2">No results found</h3>
-                  <p className="text-[#9ca3af]">Try a different search term</p>
+                <div className="text-center py-12">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-white/30" />
+                  <p className="text-white/60">No results found</p>
                 </div>
               )}
-
               {!searchLoading && (
                 <div className="space-y-3">
                   {tracks.map((track) => {
@@ -299,50 +329,40 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
                 </div>
               )}
             </div>
-
-            {/* Queue Column */}
-            <div className={activeTab === 'recs' ? 'hidden lg:block' : ''}>
-              <div className="lg:sticky lg:top-6">
-                <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-[#1a1a1a] rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl text-white font-medium">Up Next</h2>
-                    <span className="text-[#9ca3af] text-sm">{queue.length} songs</span>
-                  </div>
-
-                  <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-hide">
-                    {queue.map((song, index) => (
-                      <QueueItem
-                        key={song.trackId}
-                        position={index + 1}
-                        title={song.title}
-                        artist={song.artist}
-                        upvotes={song.upvotes}
-                        isNowPlaying={nowPlaying?.trackId === song.trackId}
-                        onUpvote={() => handleUpvote(song.trackId)}
-                        allowDownvotes={false}
-                      />
-                    ))}
-                    {queue.length === 0 && (
-                      <div className="text-center py-8 text-[#9ca3af]">Queue is empty</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
+        )}
+
+        {/* Members tab */}
+        {activeTab === 'members' && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-lg">In this party</h3>
+              <p className="text-sm text-white/50">{members.length} members</p>
+            </div>
+            <MemberList members={members} activeMembersCount={partyState.activeMembersCount} />
+          </div>
+        )}
       </div>
 
+      {/* Bottom mini player */}
       {nowPlaying && (
-        <div className="fixed bottom-0 left-0 right-0 z-10">
-          <PlayerBar
-            albumArt={nowPlaying.albumArtUrl || ''}
-            title={nowPlaying.title}
-            artist={nowPlaying.artist}
-            isPlaying={true}
-            progress={0}
-            isHost={false}
-          />
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-xl border-t border-white/10 z-10">
+          <div className="max-w-2xl mx-auto p-4">
+            <div className="flex items-center gap-3">
+              {nowPlaying.albumArtUrl ? (
+                <img src={nowPlaying.albumArtUrl} alt={nowPlaying.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-white/10 flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate text-white">{nowPlaying.title}</div>
+                <div className="text-xs text-white/60 truncate">{nowPlaying.artist}</div>
+              </div>
+            </div>
+            <div className="h-1 bg-white/10 rounded-full overflow-hidden mt-2">
+              <div className="h-full w-[45%] bg-gradient-to-r from-purple-500 to-pink-500" />
+            </div>
+          </div>
         </div>
       )}
 

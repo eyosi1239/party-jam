@@ -22,12 +22,12 @@ export function PlayerBar({
   onSkip
 }: PlayerBarProps) {
   return (
-    <div className="bg-gradient-to-t from-[#0a0a0a] to-[#050505] border-t border-[#1a1a1a] px-4 py-3">
+    <div className="bg-zinc-900/95 backdrop-blur-xl border-t border-white/10 px-4 py-3">
       <div className="max-w-[1400px] mx-auto">
         {/* Progress Bar */}
-        <div className="w-full h-1 bg-[#1a1a1a] rounded-full mb-3 overflow-hidden">
-          <div 
-            className="h-full bg-[#00ff41] rounded-full transition-all duration-300"
+        <div className="w-full h-1 bg-white/10 rounded-full mb-3 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -45,7 +45,7 @@ export function PlayerBar({
             )}
             <div className="min-w-0">
               <h4 className="text-white text-sm font-medium truncate">{title}</h4>
-              <p className="text-[#9ca3af] text-xs truncate">{artist}</p>
+              <p className="text-white/60 text-xs truncate">{artist}</p>
             </div>
           </div>
 
@@ -54,7 +54,7 @@ export function PlayerBar({
             <div className="flex items-center gap-2">
               <button
                 onClick={onPlayPause}
-                className="p-2 rounded-xl bg-[#00ff41] text-black hover:bg-[#00e639] transition-all duration-200"
+                className="p-2 rounded-full bg-white text-zinc-900 hover:bg-white/90 transition-all duration-200"
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5" />
@@ -65,12 +65,12 @@ export function PlayerBar({
 
               <button
                 onClick={onSkip}
-                className="p-2 rounded-xl text-[#00ff41] hover:bg-[#00ff41]/10 transition-all duration-200"
+                className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200"
               >
                 <SkipForward className="w-5 h-5" />
               </button>
 
-              <button className="p-2 rounded-xl text-[#9ca3af] hover:text-[#00ff41] hover:bg-[#1a1a1a] transition-all duration-200 hidden sm:block">
+              <button className="p-2 rounded-xl text-white/50 hover:text-purple-400 hover:bg-white/10 transition-all duration-200 hidden sm:block">
                 <Volume2 className="w-5 h-5" />
               </button>
             </div>

@@ -28,9 +28,9 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
   };
 
   const styles = {
-    success: 'bg-[#00ff41] text-black',
+    success: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
     error: 'bg-red-500 text-white',
-    info: 'bg-[#1a1a1a] text-white border border-[#2a2a2a]',
+    info: 'bg-zinc-900 text-white border border-white/10',
     warning: 'bg-yellow-500 text-black'
   };
 

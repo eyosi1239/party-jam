@@ -4,6 +4,7 @@ import { GuestView } from '@/app/pages/GuestView';
 import { HostView } from '@/app/pages/HostView';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SpotifyProvider, useSpotify } from '@/contexts/SpotifyContext';
+import { AppleMusicProvider, useAppleMusic } from '@/contexts/AppleMusicContext';
 import { SpotifyCallback } from '@/app/pages/SpotifyCallback';
 import { JoinCodeModal } from '@/app/components/JoinCodeModal';
 import { CreatePartyModal } from '@/app/components/CreatePartyModal';
@@ -12,12 +13,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useParty } from '@/lib/useParty';
 import { api } from '@/lib/api';
 
-type View = 'login' | 'signup' | 'guest' | 'host';
+type View = 'welcome' | 'login' | 'signup' | 'guest' | 'host';
 
 function AppContent() {
   const { user, loading, loginWithGoogle, resetPassword } = useAuth();
   const spotify = useSpotify();
-  const [currentView, setCurrentView] = useState<View>('login');
+  const appleMusic = useAppleMusic();
+  const [currentView, setCurrentView] = useState<View>('welcome');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
@@ -40,12 +42,12 @@ function AppContent() {
     }
   }, [party.partyState, party.partyId, party.userId]);
 
-  // Logged in = Firebase user OR Spotify user
-  const isLoggedIn = !!user || !!spotify.user;
+  // Logged in = Firebase user OR Spotify user OR Apple Music user
+  const isLoggedIn = !!user || !!spotify.user || !!appleMusic.user;
 
-  // When user logs in, switch away from login/signup to guest lobby
+  // When user logs in, switch away from auth screens to guest lobby
   useEffect(() => {
-    if (isLoggedIn && (currentView === 'login' || currentView === 'signup')) {
+    if (isLoggedIn && (currentView === 'welcome' || currentView === 'login' || currentView === 'signup')) {
       setCurrentView('guest');
     }
   }, [isLoggedIn]);
@@ -63,8 +65,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#050505]">
-        <div className="text-[#00ff41]">Loading...</div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-zinc-950 via-purple-950/20 to-zinc-950">
+        <div className="text-purple-400">Loading...</div>
       </div>
     );
   }
@@ -106,7 +108,7 @@ function AppContent() {
 
   // Called by CreatePartyModal with chosen mood
   const handleCreateWithMood = async (mood: string) => {
-    const userId = user?.uid ?? spotify.user?.id ?? `host_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `host_${Date.now()}`;
     await party.createParty(userId, mood);
   };
 
@@ -116,41 +118,119 @@ function AppContent() {
   // Called by JoinCodeModal with the resolved code
   const handleJoinWithCode = async (joinCode: string) => {
     const { partyId } = await api.resolveJoinCode(joinCode);
-    const userId = user?.uid ?? spotify.user?.id ?? `guest_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `guest_${Date.now()}`;
     await party.joinParty(partyId, userId);
   };
 
+  const handleAppleMusicLogin = async () => {
+    try {
+      await appleMusic.login();
+    } catch (err) {
+      console.error('Apple Music login failed:', err);
+    }
+  };
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#050505] p-4 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-[#00ff41] rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-20 right-10 w-64 h-64 bg-[#00ff41] rounded-full blur-[100px]"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#00ff41] rounded-full blur-[120px]"></div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 via-purple-950/20 to-zinc-950 relative overflow-hidden">
+      {/* Background blobs — always visible */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/5 rounded-full blur-[120px]"></div>
       </div>
 
-      {/* Subtle Grid Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(#00ff41 1px, transparent 1px), linear-gradient(90deg, #00ff41 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
-        }}
-      ></div>
+      {/* Views */}
+      <div className="relative z-10 min-h-screen">
+        {currentView === 'welcome' && (
+          <div className="min-h-screen flex flex-col items-center justify-between p-6 max-w-md mx-auto">
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="mb-8">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-50" />
+                  <div className="relative bg-gradient-to-br from-purple-600 to-pink-600 p-6 rounded-3xl">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16 text-white">
+                      <path d="M9 18V5l12-2v13" />
+                      <circle cx="6" cy="18" r="3" />
+                      <circle cx="18" cy="16" r="3" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                Party Jam
+              </h1>
+              <p className="text-white/70 text-lg mb-2">One room. One queue. One vibe.</p>
+              <p className="text-white/50 text-sm">Collaborative music for real-time parties</p>
+            </div>
+            <div className="w-full space-y-4">
+              <button
+                onClick={() => setCurrentView('login')}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg py-4 rounded-2xl shadow-lg shadow-purple-500/25 font-medium transition-all duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                Create a Party
+              </button>
+              <button
+                onClick={() => { setShowJoinModal(true); }}
+                className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/20 hover:bg-white/10 text-white text-lg py-4 rounded-2xl font-medium transition-all duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                Join a Party
+              </button>
+              <p className="text-center text-xs text-white/40 mt-2">
+                Works with Spotify • Apple Music • Amazon Music • YouTube Music
+              </p>
+            </div>
+          </div>
+        )}
 
+        {currentView === 'guest' && (
+          <GuestView
+            partyState={party.partyState}
+            partyId={party.partyId}
+            userId={party.userId}
+            joinCode={party.joinCode}
+            onVote={party.vote}
+            onCreateParty={handleCreateParty}
+            onJoinParty={handleJoinParty}
+            onLeaveRoom={party.leaveParty}
+          />
+        )}
 
-      {/* Render based on current view */}
-      {currentView === 'guest' && <GuestView partyState={party.partyState} partyId={party.partyId} userId={party.userId} joinCode={party.joinCode} onVote={party.vote} onCreateParty={handleCreateParty} onJoinParty={handleJoinParty} onLeaveRoom={party.leaveParty} />}
-      {currentView === 'host' && (
-        <HostView
-          partyState={party.partyState}
-          joinCode={party.joinCode}
-          onStartParty={party.startParty}
-          onUpdateSettings={party.updateSettings}
-          onRegenerateCode={party.regenerateCode}
-          onLeaveRoom={party.leaveParty}
-        />
-      )}
+        {currentView === 'host' && (
+          <HostView
+            partyState={party.partyState}
+            joinCode={party.joinCode}
+            onStartParty={party.startParty}
+            onUpdateSettings={party.updateSettings}
+            onRegenerateCode={party.regenerateCode}
+            onLeaveRoom={party.leaveParty}
+          />
+        )}
+
+        {currentView === 'login' && (
+          <LoginCard
+            onLogin={handleLogin}
+            onGoogleLogin={handleGoogleLogin}
+            onSpotifyLogin={spotify.login}
+            onAppleMusicLogin={handleAppleMusicLogin}
+            onForgotPassword={handleForgotPassword}
+            onSignUp={() => setCurrentView('signup')}
+            onBack={() => setCurrentView('welcome')}
+          />
+        )}
+
+        {currentView === 'signup' && (
+          <SignUpCard
+            onSignUp={handleSignUp}
+            onGoogleSignUp={handleGoogleSignUp}
+            onSpotifySignUp={spotify.login}
+            onAppleMusicSignUp={handleAppleMusicLogin}
+            onLogin={() => setCurrentView('login')}
+            onBack={() => setCurrentView('welcome')}
+          />
+        )}
+      </div>
 
       <JoinCodeModal
         isOpen={showJoinModal}
@@ -164,28 +244,6 @@ function AppContent() {
         onCreate={handleCreateWithMood}
       />
 
-      {/* Login or Sign Up Card */}
-      {(currentView === 'login' || currentView === 'signup') && (
-        <>
-          {currentView === 'signup' ? (
-            <SignUpCard
-              onSignUp={handleSignUp}
-              onGoogleSignUp={handleGoogleSignUp}
-              onSpotifySignUp={spotify.isConfigured ? spotify.login : undefined}
-              onLogin={() => setCurrentView('login')}
-            />
-          ) : (
-            <LoginCard
-              onLogin={handleLogin}
-              onGoogleLogin={handleGoogleLogin}
-              onSpotifyLogin={spotify.isConfigured ? spotify.login : undefined}
-              onForgotPassword={handleForgotPassword}
-              onSignUp={() => setCurrentView('signup')}
-            />
-          )}
-        </>
-      )}
-
       {/* Party ended notification for guests */}
       {party.partyEndedByHost && (
         <Toast
@@ -195,7 +253,7 @@ function AppContent() {
         />
       )}
 
-      {/* App-level error (e.g. pending room code auto-join failed) */}
+      {/* App-level error */}
       {appError && (
         <Toast
           message={appError}
@@ -212,7 +270,9 @@ export default function App() {
   return (
     <AuthProvider>
       <SpotifyProvider>
-        <AppContent />
+        <AppleMusicProvider>
+          <AppContent />
+        </AppleMusicProvider>
       </SpotifyProvider>
     </AuthProvider>
   );
