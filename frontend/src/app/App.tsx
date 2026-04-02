@@ -4,6 +4,7 @@ import { GuestView } from '@/app/pages/GuestView';
 import { HostView } from '@/app/pages/HostView';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SpotifyProvider, useSpotify } from '@/contexts/SpotifyContext';
+import { AppleMusicProvider, useAppleMusic } from '@/contexts/AppleMusicContext';
 import { SpotifyCallback } from '@/app/pages/SpotifyCallback';
 import { JoinCodeModal } from '@/app/components/JoinCodeModal';
 import { CreatePartyModal } from '@/app/components/CreatePartyModal';
@@ -17,6 +18,7 @@ type View = 'welcome' | 'login' | 'signup' | 'guest' | 'host';
 function AppContent() {
   const { user, loading, loginWithGoogle, resetPassword } = useAuth();
   const spotify = useSpotify();
+  const appleMusic = useAppleMusic();
   const [currentView, setCurrentView] = useState<View>('welcome');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -40,8 +42,8 @@ function AppContent() {
     }
   }, [party.partyState, party.partyId, party.userId]);
 
-  // Logged in = Firebase user OR Spotify user
-  const isLoggedIn = !!user || !!spotify.user;
+  // Logged in = Firebase user OR Spotify user OR Apple Music user
+  const isLoggedIn = !!user || !!spotify.user || !!appleMusic.user;
 
   // When user logs in, switch away from auth screens to guest lobby
   useEffect(() => {
@@ -106,7 +108,7 @@ function AppContent() {
 
   // Called by CreatePartyModal with chosen mood
   const handleCreateWithMood = async (mood: string) => {
-    const userId = user?.uid ?? spotify.user?.id ?? `host_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `host_${Date.now()}`;
     await party.createParty(userId, mood);
   };
 
@@ -116,8 +118,16 @@ function AppContent() {
   // Called by JoinCodeModal with the resolved code
   const handleJoinWithCode = async (joinCode: string) => {
     const { partyId } = await api.resolveJoinCode(joinCode);
-    const userId = user?.uid ?? spotify.user?.id ?? `guest_${Date.now()}`;
+    const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `guest_${Date.now()}`;
     await party.joinParty(partyId, userId);
+  };
+
+  const handleAppleMusicLogin = async () => {
+    try {
+      await appleMusic.login();
+    } catch (err) {
+      console.error('Apple Music login failed:', err);
+    }
   };
 
   return (
@@ -202,7 +212,8 @@ function AppContent() {
           <LoginCard
             onLogin={handleLogin}
             onGoogleLogin={handleGoogleLogin}
-            onSpotifyLogin={spotify.isConfigured ? spotify.login : undefined}
+            onSpotifyLogin={spotify.login}
+            onAppleMusicLogin={handleAppleMusicLogin}
             onForgotPassword={handleForgotPassword}
             onSignUp={() => setCurrentView('signup')}
             onBack={() => setCurrentView('welcome')}
@@ -213,7 +224,8 @@ function AppContent() {
           <SignUpCard
             onSignUp={handleSignUp}
             onGoogleSignUp={handleGoogleSignUp}
-            onSpotifySignUp={spotify.isConfigured ? spotify.login : undefined}
+            onSpotifySignUp={spotify.login}
+            onAppleMusicSignUp={handleAppleMusicLogin}
             onLogin={() => setCurrentView('login')}
             onBack={() => setCurrentView('welcome')}
           />
@@ -258,7 +270,9 @@ export default function App() {
   return (
     <AuthProvider>
       <SpotifyProvider>
-        <AppContent />
+        <AppleMusicProvider>
+          <AppContent />
+        </AppleMusicProvider>
       </SpotifyProvider>
     </AuthProvider>
   );

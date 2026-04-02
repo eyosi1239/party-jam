@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -5,6 +6,7 @@ import cors from 'cors';
 import { ENV } from './config.js';
 import { store } from './store.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
+import appleMusicRoutes from './routes/appleMusic.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,6 +31,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/', partyRoutes);
+app.use('/', appleMusicRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {

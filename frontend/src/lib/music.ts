@@ -8,6 +8,12 @@ import {
   getTrack as spotifyGetTrack,
   getRecommendations as spotifyGetRecommendations,
 } from './spotify';
+import {
+  isAppleMusicAuthorized,
+  searchAppleTracks,
+  getAppleTrack,
+  getAppleRecommendations,
+} from './appleMusic';
 
 export interface Track {
   id: string;
@@ -278,11 +284,39 @@ export class SpotifyMusicProvider implements MusicProvider {
 }
 
 /**
+ * Apple Music provider — active when the user has authorized with MusicKit JS.
+ */
+export class AppleMusicProvider implements MusicProvider {
+  private storefront: string;
+
+  constructor(storefront = 'us') {
+    this.storefront = storefront;
+  }
+
+  async searchTracks(query: string, limit = 20): Promise<Track[]> {
+    const results = await searchAppleTracks(query, this.storefront, limit);
+    return results as unknown as Track[];
+  }
+
+  async getTrack(trackId: string): Promise<Track> {
+    const track = await getAppleTrack(trackId, this.storefront);
+    return track as unknown as Track;
+  }
+
+  async getRecommendations(mood: string, limit = 10): Promise<Track[]> {
+    const tracks = await getAppleRecommendations(mood, this.storefront, limit);
+    return tracks as unknown as Track[];
+  }
+}
+
+/**
  * Get the appropriate music provider based on configuration.
- * Returns SpotifyMusicProvider when the user has authenticated with Spotify,
- * otherwise falls back to MockMusicProvider.
+ * Priority: Apple Music → Spotify → Mock.
  */
 export function getMusicProvider(): MusicProvider {
+  if (isAppleMusicAuthorized()) {
+    return new AppleMusicProvider();
+  }
   if (isSpotifyLoggedIn()) {
     return new SpotifyMusicProvider();
   }

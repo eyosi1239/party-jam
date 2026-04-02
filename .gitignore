@@ -1,5 +1,14 @@
 node_modules
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+# These files contain API keys, private keys, and tokens — never commit them.
+.env
 .env.local
+.env.production
+.env.staging
+*.p8
+*.pem
+*.key
 
 # build output
 frontend/dist
