@@ -36,6 +36,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [selectedSongToRemove, setSelectedSongToRemove] = useState<{ title: string; trackId: string } | null>(null);
   const [isSeedingQueue, setIsSeedingQueue] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
   const [endPartyError, setEndPartyError] = useState<string | null>(null);
   const [volume, setVolumeState] = useState(70);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -110,13 +111,23 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   };
 
   const handleSeedQueue = async () => {
+    setSeedError(null);
     setIsSeedingQueue(true);
     try {
       const musicProvider = getMusicProvider();
       const tracks = await musicProvider.getRecommendations(party.mood, 10);
+      if (tracks.length === 0) {
+        setSeedError('No tracks found. Try a different mood or check your music provider connection.');
+        return;
+      }
       await api.seedQueue(party.partyId, party.hostId, tracks);
+      // If nothing is playing yet, kick off the first song
+      if (!nowPlaying) {
+        await api.skipCurrentSong(party.partyId, party.hostId);
+      }
     } catch (error) {
       console.error('Failed to seed queue:', error);
+      setSeedError('Failed to load tracks. Check your Spotify connection and try again.');
     } finally {
       setIsSeedingQueue(false);
     }
@@ -271,6 +282,12 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
           )}
         </div>
       </div>
+      {seedError && (
+        <div className="mb-3 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+          <span>{seedError}</span>
+          <button onClick={() => setSeedError(null)} className="ml-3 text-red-300 hover:text-red-100">✕</button>
+        </div>
+      )}
       <div className="space-y-3">
         {queue.map((song, index) => (
           <QueueItemLarge

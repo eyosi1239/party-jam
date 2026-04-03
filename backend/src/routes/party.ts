@@ -173,6 +173,23 @@ router.post('/party/:partyId/start', (req: Request, res: Response) => {
 
   store.updateParty(partyId, { status: 'LIVE' });
 
+  // Auto-advance to first song if queue already has tracks
+  const partyData = store.getPartyData(partyId);
+  if (partyData && partyData.queue.length > 0 && !partyData.nowPlaying) {
+    const firstSong = store.advanceQueue(partyId);
+    if (io && firstSong) {
+      const state = store.getState(partyId);
+      if (state) {
+        io.to(`party:${partyId}`).emit('party:queueUpdated', { queue: state.queue });
+      }
+      io.to(`party:${partyId}`).emit('party:nowPlaying', {
+        trackId: firstSong.trackId,
+        startedAt: Date.now(),
+        song: firstSong,
+      });
+    }
+  }
+
   res.json({ status: 'LIVE' });
 });
 
