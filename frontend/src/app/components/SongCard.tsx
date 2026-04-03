@@ -1,5 +1,11 @@
-import { MoreVertical, Plus } from 'lucide-react';
+import { MoreVertical, Plus, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu';
 
 interface SongCardProps {
   albumArt: string;
@@ -8,11 +14,31 @@ interface SongCardProps {
   tags?: string[];
   explicit?: boolean;
   disabled?: boolean;
+  /** Platform URI, e.g. "spotify:track:xxx" or "apple:song:xxx" — used for "View on" link */
+  trackUri?: string;
   onAdd?: () => void;
+  /** @deprecated — menu actions are now handled by the built-in DropdownMenu */
   onMenuClick?: () => void;
 }
 
-export function SongCard({ albumArt, title, artist, tags = [], explicit = false, disabled = false, onAdd, onMenuClick }: SongCardProps) {
+function getViewUrl(trackUri?: string): string | null {
+  if (!trackUri) return null;
+  if (trackUri.startsWith('spotify:track:')) {
+    return `https://open.spotify.com/track/${trackUri.slice('spotify:track:'.length)}`;
+  }
+  if (trackUri.startsWith('apple:song:')) {
+    return `https://music.apple.com/song/${trackUri.slice('apple:song:'.length)}`;
+  }
+  return null;
+}
+
+function getViewLabel(trackUri?: string): string {
+  if (trackUri?.startsWith('spotify:')) return 'View on Spotify';
+  if (trackUri?.startsWith('apple:')) return 'View on Apple Music';
+  return 'View track';
+}
+
+export function SongCard({ albumArt, title, artist, tags = [], explicit = false, disabled = false, trackUri, onAdd }: SongCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
@@ -75,12 +101,43 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
             <Plus className="w-5 h-5" />
           </button>
           
-          <button
-            onClick={onMenuClick}
-            className="p-2 rounded-xl text-white/40 hover:text-purple-400 hover:bg-white/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="p-2 rounded-xl text-white/40 hover:text-purple-400 hover:bg-white/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-zinc-900 border border-white/10 text-white min-w-[180px]"
+            >
+              {!disabled && onAdd && (
+                <DropdownMenuItem
+                  onClick={onAdd}
+                  className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Suggest to party
+                </DropdownMenuItem>
+              )}
+              {getViewUrl(trackUri) && (
+                <DropdownMenuItem asChild>
+                  <a
+                    href={getViewUrl(trackUri)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center cursor-pointer hover:bg-white/10 focus:bg-white/10 text-white"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {getViewLabel(trackUri)}
+                  </a>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
