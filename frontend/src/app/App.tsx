@@ -201,6 +201,7 @@ function AppContent() {
           <HostView
             partyState={party.partyState}
             joinCode={party.joinCode}
+            queueLowSignal={party.queueLowSignal}
             onStartParty={party.startParty}
             onUpdateSettings={party.updateSettings}
             onRegenerateCode={party.regenerateCode}
