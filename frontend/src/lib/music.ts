@@ -14,6 +14,7 @@ import {
   getAppleTrack,
   getAppleRecommendations,
 } from './appleMusic';
+import { searchDeezerTracks, getDeezerRecommendations } from './deezer';
 
 export interface Track {
   id: string;

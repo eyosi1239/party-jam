@@ -271,42 +271,23 @@ export async function getTrack(trackId: string): Promise<SpotifyTrack> {
   return spotifyRequest<SpotifyTrack>(`/tracks/${trackId}`);
 }
 
-interface SpotifyRecommendationsResult {
-  tracks: SpotifyTrack[];
-}
-
-// Mood → audio feature targets + genre seeds for /recommendations
-const MOOD_AUDIO_FEATURES: Record<string, {
-  seed_genres: string;
-  target_energy: number;
-  target_valence: number;
-  target_tempo: number;
-  target_danceability: number;
-}> = {
-  chill:   { seed_genres: 'chill,acoustic,ambient',    target_energy: 0.3,  target_valence: 0.4,  target_tempo: 90,  target_danceability: 0.4 },
-  hype:    { seed_genres: 'dance,pop,party',            target_energy: 0.9,  target_valence: 0.8,  target_tempo: 128, target_danceability: 0.9 },
-  workout: { seed_genres: 'work-out,hip-hop,edm',       target_energy: 0.85, target_valence: 0.6,  target_tempo: 140, target_danceability: 0.7 },
-  focus:   { seed_genres: 'study,ambient,classical',    target_energy: 0.4,  target_valence: 0.3,  target_tempo: 100, target_danceability: 0.3 },
-  funeral: { seed_genres: 'sad,acoustic,piano',         target_energy: 0.2,  target_valence: 0.15, target_tempo: 70,  target_danceability: 0.2 },
+// Mood → search query for Spotify /search
+// Uses /search instead of the deprecated /recommendations endpoint (removed for new apps Nov 2023)
+const MOOD_SEARCH_QUERIES: Record<string, string> = {
+  chill:   'chill acoustic lofi indie vibes',
+  hype:    'dance pop party hits upbeat',
+  workout: 'workout hip-hop edm pump',
+  focus:   'ambient study lofi instrumental',
+  funeral: 'sad piano ballad melancholy',
 };
 
 /**
- * Get track recommendations based on party mood
+ * Get track recommendations based on party mood.
+ * Uses the /search endpoint (the old /recommendations endpoint is deprecated for new apps).
  */
 export async function getRecommendations(mood: string, limit = 10): Promise<SpotifyTrack[]> {
-  const features = MOOD_AUDIO_FEATURES[mood.toLowerCase()] ?? MOOD_AUDIO_FEATURES.chill;
-
-  const params = new URLSearchParams({
-    seed_genres: features.seed_genres,
-    target_energy: features.target_energy.toString(),
-    target_valence: features.target_valence.toString(),
-    target_tempo: features.target_tempo.toString(),
-    target_danceability: features.target_danceability.toString(),
-    limit: limit.toString(),
-  });
-
-  const result = await spotifyRequest<SpotifyRecommendationsResult>(`/recommendations?${params.toString()}`);
-  return result.tracks;
+  const query = MOOD_SEARCH_QUERIES[mood.toLowerCase()] ?? MOOD_SEARCH_QUERIES.chill;
+  return searchTracks(query, limit);
 }
 
 /**
