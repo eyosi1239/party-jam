@@ -3,12 +3,13 @@ import { QueueItemLarge } from '@/app/components/QueueItemLarge';
 import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
 import { Modal } from '@/app/components/Modal';
-import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
+import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
 import { api } from '@/lib/api';
+import { ProfilePanel } from '@/app/components/ProfilePanel';
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -31,6 +32,7 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showEndPartyModal, setShowEndPartyModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [selectedSongToRemove, setSelectedSongToRemove] = useState<{ title: string; trackId: string } | null>(null);
   const [isSeedingQueue, setIsSeedingQueue] = useState(false);
   const [endPartyError, setEndPartyError] = useState<string | null>(null);
@@ -316,6 +318,13 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
             </div>
           </div>
           <button
+            onClick={() => setShowProfilePanel(true)}
+            className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
+            title="Profile"
+          >
+            <User className="w-5 h-5" />
+          </button>
+          <button
             onClick={() => setShowEndPartyModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all duration-200 text-sm"
           >
@@ -401,6 +410,9 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
       }>
         <p>Remove "{selectedSongToRemove?.title}" from the queue?</p>
       </Modal>
+
+      {/* Profile Panel */}
+      <ProfilePanel open={showProfilePanel} onClose={() => setShowProfilePanel(false)} />
 
       {/* End Party Modal */}
       <Modal isOpen={showEndPartyModal} onClose={() => setShowEndPartyModal(false)} title="End Party?" actions={

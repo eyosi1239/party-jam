@@ -4,12 +4,13 @@ import { Toast } from '@/app/components/Toast';
 import { SuggestionTestCard } from '@/app/components/SuggestionTestCard';
 import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
-import { Search, Users, LogOut, Music } from 'lucide-react';
+import { Search, Users, LogOut, Music, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider, type Track } from '@/lib/music';
 import { api } from '@/lib/api';
 import { useSpotify } from '@/contexts/SpotifyContext';
+import { ProfilePanel } from '@/app/components/ProfilePanel';
 
 interface GuestViewProps {
   partyState: PartyState | null;
@@ -31,6 +32,7 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [activeTab, setActiveTab] = useState<'queue' | 'browse' | 'members'>('queue');
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const party = partyState?.party ?? null;
@@ -190,6 +192,13 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
               </div>
             </div>
           </div>
+          <button
+            onClick={() => setShowProfilePanel(true)}
+            className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
+            title="Profile"
+          >
+            <User className="w-5 h-5" />
+          </button>
           {onLeaveRoom && (
             <button
               onClick={onLeaveRoom}
@@ -373,6 +382,8 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
           onClose={() => setToastMessage(null)}
         />
       )}
+
+      <ProfilePanel open={showProfilePanel} onClose={() => setShowProfilePanel(false)} />
     </div>
   );
 }
