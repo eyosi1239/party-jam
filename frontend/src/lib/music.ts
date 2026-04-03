@@ -322,3 +322,13 @@ export function getMusicProvider(): MusicProvider {
   }
   return new MockMusicProvider();
 }
+
+/**
+ * Return which platform is currently active.
+ * Same priority as getMusicProvider.
+ */
+export function getMusicPlatform(): 'SPOTIFY' | 'APPLE_MUSIC' | 'MOCK' {
+  if (isAppleMusicAuthorized()) return 'APPLE_MUSIC';
+  if (isSpotifyLoggedIn()) return 'SPOTIFY';
+  return 'MOCK';
+}

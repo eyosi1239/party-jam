@@ -6,8 +6,9 @@ import { Modal } from '@/app/components/Modal';
 import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { PartyState } from '@/lib/types';
-import { getMusicProvider } from '@/lib/music';
+import { getMusicProvider, getMusicPlatform } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
+import { useAppleMusicPlayer } from '@/lib/useAppleMusicPlayer';
 import { api } from '@/lib/api';
 
 function formatTime(ms: number): string {
@@ -37,12 +38,22 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
   const [volume, setVolumeState] = useState(70);
   const [copyFeedback, setCopyFeedback] = useState(false);
 
-  const { playbackState, playTrack, togglePlay, setVolume } = useSpotifyPlayer();
+  const spotifyPlayer = useSpotifyPlayer();
+  const appleMusicPlayer = useAppleMusicPlayer();
+
+  // Pick the active player based on which platform the host is using
+  const activePlatform = getMusicPlatform();
+  const { playbackState, playTrack, togglePlay, setVolume } =
+    activePlatform === 'APPLE_MUSIC' ? appleMusicPlayer : spotifyPlayer;
 
   const nowPlayingTrackId = partyState?.nowPlaying?.trackId;
   useEffect(() => {
     if (!nowPlayingTrackId || !playbackState.isReady) return;
-    playTrack(`spotify:track:${nowPlayingTrackId}`);
+    if (activePlatform === 'APPLE_MUSIC') {
+      playTrack(`apple:song:${nowPlayingTrackId}`);
+    } else {
+      playTrack(`spotify:track:${nowPlayingTrackId}`);
+    }
   }, [nowPlayingTrackId, playbackState.isReady]);
 
   if (!partyState) {
