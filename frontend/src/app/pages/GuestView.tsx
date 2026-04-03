@@ -31,6 +31,7 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
   const [searchLoading, setSearchLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'queue' | 'browse' | 'members'>('queue');
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,10 +46,11 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
   useEffect(() => {
     if (!party) return;
     setSearchLoading(true);
+    setSearchError(null);
     musicProvider
       .getRecommendations?.(party.mood, 20)
       .then((results) => setTracks(results ?? []))
-      .catch(console.error)
+      .catch(() => setSearchError('Failed to load recommendations. Check your music provider connection.'))
       .finally(() => setSearchLoading(false));
   }, [party?.mood]);
 
@@ -59,10 +61,11 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
     if (!searchQuery.trim()) {
       if (party) {
         setSearchLoading(true);
+        setSearchError(null);
         musicProvider
           .getRecommendations?.(party.mood, 20)
           .then((results) => setTracks(results ?? []))
-          .catch(console.error)
+          .catch(() => setSearchError('Failed to load recommendations. Check your music provider connection.'))
           .finally(() => setSearchLoading(false));
       }
       return;
@@ -70,11 +73,13 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
 
     debounceRef.current = setTimeout(async () => {
       setSearchLoading(true);
+      setSearchError(null);
       try {
         const results = await musicProvider.searchTracks(searchQuery);
         setTracks(results);
       } catch (err) {
         console.error('Search failed:', err);
+        setSearchError('Search failed. Check your Spotify connection and try again.');
       } finally {
         setSearchLoading(false);
       }
@@ -311,7 +316,12 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
                 {searchQuery ? `Results for "${searchQuery}"` : 'Recommended'}
               </h3>
               {searchLoading && <div className="text-center py-12 text-white/60">Searching...</div>}
-              {!searchLoading && tracks.length === 0 && (
+              {!searchLoading && searchError && (
+                <div className="text-center py-8 px-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {searchError}
+                </div>
+              )}
+              {!searchLoading && !searchError && tracks.length === 0 && (
                 <div className="text-center py-12">
                   <Search className="w-12 h-12 mx-auto mb-4 text-white/30" />
                   <p className="text-white/60">No results found</p>
