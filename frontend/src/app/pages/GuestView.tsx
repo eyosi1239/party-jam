@@ -321,8 +321,8 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
                         explicit={track.explicit}
                         tags={blocked ? ['Blocked'] : []}
                         disabled={suggestionsDisabled || blocked}
+                        trackUri={track.uri}
                         onAdd={() => handleSuggest(track)}
-                        onMenuClick={() => console.log('Menu', track.id)}
                       />
                     );
                   })}
