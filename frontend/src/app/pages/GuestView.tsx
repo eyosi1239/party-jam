@@ -191,7 +191,7 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
               <Music className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-semibold">{party?.mood ? `${party.mood} Party` : 'Party Jam'}</div>
+              <div className="font-semibold">{party?.name || (party?.mood ? `${party.mood} Party` : 'Party Jam')}</div>
               <div className="text-xs text-white/50">
                 Guest • {joinCode ?? partyState.party.partyId.slice(0, 6).toUpperCase()}
               </div>

@@ -1,4 +1,4 @@
-import { Lock, RefreshCw, X } from 'lucide-react';
+import { X, Lock, RefreshCw, Sparkles, Flame, Dumbbell, Brain, Music } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -13,48 +13,30 @@ interface SettingsPanelProps {
   kidFriendly: boolean;
   allowSuggestions: boolean;
   locked: boolean;
-  onUpdateSettings: (settings: {
-    mood?: string;
-    kidFriendly?: boolean;
-    allowSuggestions?: boolean;
-    locked?: boolean;
-  }) => Promise<void>;
+  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
 }
 
-const MOODS = ['chill', 'hype', 'workout', 'focus', 'funeral'];
+const MOODS = [
+  { value: 'chill',   label: 'Chill',   icon: <Sparkles className="w-4 h-4" /> },
+  { value: 'hype',    label: 'Hype',    icon: <Flame className="w-4 h-4" /> },
+  { value: 'workout', label: 'Workout', icon: <Dumbbell className="w-4 h-4" /> },
+  { value: 'focus',   label: 'Focus',   icon: <Brain className="w-4 h-4" /> },
+  { value: 'funeral', label: 'Funeral', icon: <Music className="w-4 h-4" /> },
+];
 
-export function SettingsPanel({
-  open,
-  onClose,
-  mood,
-  kidFriendly,
-  allowSuggestions,
-  locked,
-  onUpdateSettings,
-  onRegenerateCode,
-}: SettingsPanelProps) {
-  const toggleRows = [
-    {
-      label: 'Lock Room',
-      value: locked,
-      onChange: () => onUpdateSettings({ locked: !locked }),
-      icon: <Lock className="w-4 h-4" />,
-    },
-    {
-      label: 'Allow suggestions',
-      value: allowSuggestions,
-      onChange: () => onUpdateSettings({ allowSuggestions: !allowSuggestions }),
-      icon: null,
-    },
-    {
-      label: 'Kid-friendly mode',
-      value: kidFriendly,
-      onChange: () => onUpdateSettings({ kidFriendly: !kidFriendly }),
-      icon: null,
-    },
-  ];
+function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      className={`w-11 h-6 rounded-full transition-all duration-200 relative flex-shrink-0 ${value ? 'bg-purple-500' : 'bg-white/20'}`}
+    >
+      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${value ? 'left-[22px]' : 'left-0.5'}`} />
+    </button>
+  );
+}
 
+export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestions, locked, onUpdateSettings, onRegenerateCode }: SettingsPanelProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
@@ -62,7 +44,7 @@ export function SettingsPanel({
         className="w-80 bg-zinc-900 border-l border-white/10 text-white p-0 flex flex-col"
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/10 flex-row items-center justify-between space-y-0">
-          <SheetTitle className="text-white text-lg font-semibold">Settings</SheetTitle>
+          <SheetTitle className="text-white text-lg font-semibold">Party Settings</SheetTitle>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
@@ -74,19 +56,20 @@ export function SettingsPanel({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           {/* Mood */}
           <div>
-            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Vibe</h3>
+            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Mood</h3>
             <div className="grid grid-cols-2 gap-2">
               {MOODS.map((m) => (
                 <button
-                  key={m}
-                  onClick={() => onUpdateSettings({ mood: m })}
-                  className={`py-2 px-3 rounded-xl text-sm capitalize transition-all duration-200 ${
-                    mood === m
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium'
-                      : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  key={m.value}
+                  onClick={() => onUpdateSettings({ mood: m.value })}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all duration-200 ${
+                    mood === m.value
+                      ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border-purple-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  {m}
+                  {m.icon}
+                  {m.label}
                 </button>
               ))}
             </div>
@@ -94,32 +77,54 @@ export function SettingsPanel({
 
           {/* Toggles */}
           <div>
-            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Room</h3>
-            <div className="space-y-2">
-              {toggleRows.map(({ label, value, onChange, icon }) => (
-                <button
+            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Controls</h3>
+            <div className="space-y-3">
+              {[
+                {
+                  label: 'Lock Room',
+                  description: 'Block new guests from joining',
+                  value: locked,
+                  onChange: () => onUpdateSettings({ locked: !locked }),
+                  icon: <Lock className="w-4 h-4 text-white/50" />,
+                },
+                {
+                  label: 'Allow Suggestions',
+                  description: 'Let guests suggest songs',
+                  value: allowSuggestions,
+                  onChange: () => onUpdateSettings({ allowSuggestions: !allowSuggestions }),
+                  icon: null,
+                },
+                {
+                  label: 'Kid-Friendly',
+                  description: 'Block explicit tracks',
+                  value: kidFriendly,
+                  onChange: () => onUpdateSettings({ kidFriendly: !kidFriendly }),
+                  icon: null,
+                },
+              ].map(({ label, description, value, onChange, icon }) => (
+                <div
                   key={label}
-                  onClick={onChange}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 transition-all duration-200 border border-white/10"
+                  className="flex items-center justify-between gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     {icon}
-                    <span className="text-sm">{label}</span>
+                    <div>
+                      <div className="text-sm text-white">{label}</div>
+                      <div className="text-xs text-white/40">{description}</div>
+                    </div>
                   </div>
-                  <div className={`w-10 h-5 rounded-full transition-all duration-200 ${value ? 'bg-purple-500' : 'bg-white/20'}`}>
-                    <div className={`w-4 h-4 rounded-full bg-white transition-all duration-200 mt-0.5 ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                  </div>
-                </button>
+                  <Toggle value={value} onChange={onChange} />
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Code */}
+          {/* Room code */}
           <div>
-            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Join Code</h3>
+            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Room Code</h3>
             <button
-              onClick={async () => { await onRegenerateCode(); onClose(); }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 text-purple-400 border border-purple-500/30 hover:bg-purple-500/10 transition-all duration-200 text-sm"
+              onClick={onRegenerateCode}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all duration-200 text-sm font-medium"
             >
               <RefreshCw className="w-4 h-4" />
               Generate New Code

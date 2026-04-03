@@ -96,7 +96,7 @@ export function SignUpCard({
 
     setIsLoading(true);
     try {
-      await signUp(email, password);
+      await signUp(email, password, name.trim() || undefined);
       onSignUp?.(name, email, password, roomCode || undefined);
     } catch (error) {
       const firebaseError = error as FirebaseError;
