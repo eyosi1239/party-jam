@@ -92,6 +92,11 @@ export interface PartyCodeRegeneratedPayload {
   joinCode: string;
 }
 
+export interface PartyQueueLowPayload {
+  partyId: string;
+  currentLength: number;
+}
+
 // Typed event handlers map
 export type SocketEventHandlers = {
   'party:joined': (payload: PartyJoinedPayload) => void;
@@ -109,6 +114,7 @@ export type SocketEventHandlers = {
   'party:ended': (payload: PartyEndedPayload) => void;
   'party:membersUpdated': (payload: PartyMembersUpdatedPayload) => void;
   'party:codeRegenerated': (payload: PartyCodeRegeneratedPayload) => void;
+  'party:queueLow': (payload: PartyQueueLowPayload) => void;
 };
 
 class PartySocketClient {
