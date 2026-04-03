@@ -3,14 +3,15 @@ import { QueueItemLarge } from '@/app/components/QueueItemLarge';
 import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
 import { Modal } from '@/app/components/Modal';
-import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, User, Settings } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider, getMusicPlatform } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
 import { useAppleMusicPlayer } from '@/lib/useAppleMusicPlayer';
 import { api } from '@/lib/api';
 import { ProfilePanel } from '@/app/components/ProfilePanel';
+import { SettingsPanel } from '@/app/components/SettingsPanel';
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -22,18 +23,20 @@ function formatTime(ms: number): string {
 interface HostViewProps {
   partyState: PartyState | null;
   joinCode: string | null;
+  queueLowSignal?: number;
   onStartParty: () => Promise<void>;
   onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
   onLeaveRoom?: () => void;
 }
 
-export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings, onRegenerateCode, onLeaveRoom }: HostViewProps) {
+export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartParty, onUpdateSettings, onRegenerateCode, onLeaveRoom }: HostViewProps) {
   const [showNewCodeModal, setShowNewCodeModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showEndPartyModal, setShowEndPartyModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [selectedSongToRemove, setSelectedSongToRemove] = useState<{ title: string; trackId: string } | null>(null);
   const [isSeedingQueue, setIsSeedingQueue] = useState(false);
   const [endPartyError, setEndPartyError] = useState<string | null>(null);
@@ -57,6 +60,22 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
       playTrack(`spotify:track:${nowPlayingTrackId}`);
     }
   }, [nowPlayingTrackId, playbackState.isReady]);
+
+  // Ref keeps a stable reference to seedQueue so the auto-seed effect never goes stale
+  const seedQueueRef = useRef<(() => Promise<void>) | null>(null);
+  const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-seed queue when it runs low — debounced 60s to avoid rapid re-seeding
+  useEffect(() => {
+    if (!queueLowSignal) return;
+    if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
+    autoSeedTimerRef.current = setTimeout(() => {
+      seedQueueRef.current?.();
+    }, 60000);
+    return () => {
+      if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
+    };
+  }, [queueLowSignal]);
 
   if (!partyState) {
     return (
@@ -121,6 +140,8 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
       setIsSeedingQueue(false);
     }
   };
+  // Keep the ref up-to-date so the debounced auto-seed always calls the latest version
+  seedQueueRef.current = handleSeedQueue;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(displayCode).catch(() => {});
@@ -336,6 +357,13 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
             <User className="w-5 h-5" />
           </button>
           <button
+            onClick={() => setShowSettingsPanel(true)}
+            className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
             onClick={() => setShowEndPartyModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all duration-200 text-sm"
           >
@@ -424,6 +452,18 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
 
       {/* Profile Panel */}
       <ProfilePanel open={showProfilePanel} onClose={() => setShowProfilePanel(false)} />
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        open={showSettingsPanel}
+        onClose={() => setShowSettingsPanel(false)}
+        mood={party.mood}
+        kidFriendly={party.kidFriendly}
+        allowSuggestions={party.allowSuggestions}
+        locked={isRoomLocked}
+        onUpdateSettings={onUpdateSettings}
+        onRegenerateCode={onRegenerateCode}
+      />
 
       {/* End Party Modal */}
       <Modal isOpen={showEndPartyModal} onClose={() => setShowEndPartyModal(false)} title="End Party?" actions={
