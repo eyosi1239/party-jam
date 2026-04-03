@@ -4,7 +4,7 @@ import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
 import { Modal } from '@/app/components/Modal';
 import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, Settings } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
@@ -21,13 +21,14 @@ function formatTime(ms: number): string {
 interface HostViewProps {
   partyState: PartyState | null;
   joinCode: string | null;
+  queueLowSignal?: number;
   onStartParty: () => Promise<void>;
   onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
   onLeaveRoom?: () => void;
 }
 
-export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings, onRegenerateCode, onLeaveRoom }: HostViewProps) {
+export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartParty, onUpdateSettings, onRegenerateCode, onLeaveRoom }: HostViewProps) {
   const [showNewCodeModal, setShowNewCodeModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showEndPartyModal, setShowEndPartyModal] = useState(false);
@@ -46,6 +47,22 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
     if (!nowPlayingTrackId || !playbackState.isReady) return;
     playTrack(`spotify:track:${nowPlayingTrackId}`);
   }, [nowPlayingTrackId, playbackState.isReady]);
+
+  // Ref keeps a stable reference to seedQueue so the auto-seed effect never goes stale
+  const seedQueueRef = useRef<(() => Promise<void>) | null>(null);
+  const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-seed queue when it runs low — debounced 60s to avoid rapid re-seeding
+  useEffect(() => {
+    if (!queueLowSignal) return;
+    if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
+    autoSeedTimerRef.current = setTimeout(() => {
+      seedQueueRef.current?.();
+    }, 60000);
+    return () => {
+      if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
+    };
+  }, [queueLowSignal]);
 
   if (!partyState) {
     return (
@@ -110,6 +127,8 @@ export function HostView({ partyState, joinCode, onStartParty, onUpdateSettings,
       setIsSeedingQueue(false);
     }
   };
+  // Keep the ref up-to-date so the debounced auto-seed always calls the latest version
+  seedQueueRef.current = handleSeedQueue;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(displayCode).catch(() => {});

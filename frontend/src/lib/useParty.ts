@@ -27,6 +27,12 @@ export interface UsePartyResult {
   joinCode: string | null;
   userId: string | null;
 
+  /**
+   * Increments each time a party:queueLow event is received.
+   * Host components can useEffect on this to trigger auto-seeding.
+   */
+  queueLowSignal: number;
+
   // Actions
   createParty: (userId: string, mood?: string, name?: string) => Promise<void>;
   joinParty: (partyId: string, userId: string) => Promise<void>;
@@ -45,6 +51,7 @@ export function useParty(): UsePartyResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partyEndedByHost, setPartyEndedByHost] = useState(false);
+  const [queueLowSignal, setQueueLowSignal] = useState(0);
 
   // Create a new party (host)
   const createParty = useCallback(async (uid: string, mood = 'chill', name?: string) => {
@@ -330,6 +337,11 @@ export function useParty(): UsePartyResult {
       });
     };
 
+    // Queue is running low — signal host to auto-seed
+    const handleQueueLow = () => {
+      setQueueLowSignal((n) => n + 1);
+    };
+
     // Host ended the party — clean up and flag so UI can show a notification
     const handlePartyEnded = () => {
       setPartyEndedByHost(true);
@@ -353,6 +365,7 @@ export function useParty(): UsePartyResult {
     onSocketEvent('party:membersUpdated', handleMembersUpdated);
     onSocketEvent('party:error', handleError);
     onSocketEvent('party:ended', handlePartyEnded);
+    onSocketEvent('party:queueLow', handleQueueLow);
 
     // Cleanup
     return () => {
@@ -367,6 +380,7 @@ export function useParty(): UsePartyResult {
       offSocketEvent('party:membersUpdated', handleMembersUpdated);
       offSocketEvent('party:error', handleError);
       offSocketEvent('party:ended', handlePartyEnded);
+      offSocketEvent('party:queueLow', handleQueueLow);
     };
   }, [partyId]);
 
@@ -375,6 +389,7 @@ export function useParty(): UsePartyResult {
     loading,
     error,
     partyEndedByHost,
+    queueLowSignal,
     partyId,
     joinCode,
     userId,
