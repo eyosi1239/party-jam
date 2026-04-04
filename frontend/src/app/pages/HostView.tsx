@@ -47,6 +47,8 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
   // Stable ref so auto-seed effect never captures a stale closure
   const seedQueueRef = useRef<(() => Promise<void>) | null>(null);
   const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track current queue length in a ref so the timer callback sees up-to-date value
+  const queueLengthRef = useRef<number>(0);
 
   const spotifyPlayer = useSpotifyPlayer();
   const appleMusicPlayer = useAppleMusicPlayer();
@@ -66,12 +68,20 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
     }
   }, [nowPlayingTrackId, playbackState.isReady]);
 
-  // Auto-seed queue when it runs low — debounced 60s to avoid rapid re-seeding
+  // Keep queueLengthRef current so the timer closure sees live values
+  useEffect(() => {
+    queueLengthRef.current = partyState?.queue?.length ?? 0;
+  }, [partyState?.queue?.length]);
+
+  // Auto-seed queue when it runs low — debounced 60s to avoid rapid re-seeding.
+  // Re-checks queue length at fire time: if guests added songs in the meantime, skip.
   useEffect(() => {
     if (!queueLowSignal) return;
     if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
     autoSeedTimerRef.current = setTimeout(() => {
-      seedQueueRef.current?.();
+      if (queueLengthRef.current < 3) {
+        seedQueueRef.current?.();
+      }
     }, 60000);
     return () => {
       if (autoSeedTimerRef.current) clearTimeout(autoSeedTimerRef.current);
