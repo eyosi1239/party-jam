@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/firebase/config';
 import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName?: string) => {
     if (!auth || !db) {
       throw new Error('Firebase is not configured. Add your credentials to frontend/.env.local');
     }
@@ -41,11 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newUser = userCredential.user;
 
       if (newUser) {
+        if (displayName?.trim()) {
+          await updateProfile(newUser, { displayName: displayName.trim() });
+        }
         await setDoc(doc(db, "users", newUser.uid), {
           email: newUser.email,
+          displayName: displayName?.trim() ?? null,
           createdAt: new Date(),
         });
-        console.log("User registered and data saved to Firestore for UID:", newUser.uid);
       }
     } catch (error) {
       console.error("Error during sign up:", error);

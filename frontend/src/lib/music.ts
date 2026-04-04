@@ -253,7 +253,7 @@ export class MockMusicProvider implements MusicProvider {
     return track;
   }
 
-  async getRecommendations(mood: string, limit = 10): Promise<Track[]> {
+  async getRecommendations(_mood: string, limit = 10): Promise<Track[]> {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 400));
 
@@ -311,8 +311,26 @@ export class AppleMusicProvider implements MusicProvider {
 }
 
 /**
+ * Deezer provider — free public API, no key needed.
+ * Used as fallback when neither Apple Music nor Spotify is connected.
+ */
+export class DeezerMusicProvider implements MusicProvider {
+  async searchTracks(query: string, limit = 20): Promise<Track[]> {
+    return searchDeezerTracks(query, limit) as unknown as Track[];
+  }
+
+  async getTrack(_trackId: string): Promise<Track> {
+    throw new Error('getTrack not supported by Deezer provider');
+  }
+
+  async getRecommendations(mood: string, limit = 20): Promise<Track[]> {
+    return getDeezerRecommendations(mood, limit) as unknown as Track[];
+  }
+}
+
+/**
  * Get the appropriate music provider based on configuration.
- * Priority: Apple Music → Spotify → Mock.
+ * Priority: Apple Music → Spotify → Deezer (free) → Mock.
  */
 export function getMusicProvider(): MusicProvider {
   if (isAppleMusicAuthorized()) {
@@ -321,7 +339,7 @@ export function getMusicProvider(): MusicProvider {
   if (isSpotifyLoggedIn()) {
     return new SpotifyMusicProvider();
   }
-  return new MockMusicProvider();
+  return new DeezerMusicProvider();
 }
 
 /**

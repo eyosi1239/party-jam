@@ -44,6 +44,10 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
   const [volume, setVolumeState] = useState(70);
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  // Stable ref so auto-seed effect never captures a stale closure
+  const seedQueueRef = useRef<(() => Promise<void>) | null>(null);
+  const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const spotifyPlayer = useSpotifyPlayer();
   const appleMusicPlayer = useAppleMusicPlayer();
 
@@ -61,10 +65,6 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
       playTrack(`spotify:track:${nowPlayingTrackId}`);
     }
   }, [nowPlayingTrackId, playbackState.isReady]);
-
-  // Ref keeps a stable reference to seedQueue so the auto-seed effect never goes stale
-  const seedQueueRef = useRef<(() => Promise<void>) | null>(null);
-  const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-seed queue when it runs low — debounced 60s to avoid rapid re-seeding
   useEffect(() => {
@@ -152,6 +152,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
     }
   };
   // Keep the ref up-to-date so the debounced auto-seed always calls the latest version
+  // Keep ref current so the debounced auto-seed always calls the latest version
   seedQueueRef.current = handleSeedQueue;
 
   const handleCopyCode = () => {
@@ -191,6 +192,16 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
 
   const ControlsSection = (
     <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      {!playbackState.isReady && activePlatform === 'SPOTIFY' && (
+        <div className="mb-4 px-3 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs text-center">
+          Spotify Premium required for in-browser playback. Connect via the Profile panel.
+        </div>
+      )}
+      {!playbackState.isReady && activePlatform === 'MOCK' && (
+        <div className="mb-4 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-xs text-center">
+          Connect Spotify or Apple Music (via Profile) to enable playback.
+        </div>
+      )}
       <div className="flex items-center justify-center gap-4 mb-6">
         <button
           onClick={togglePlay}
@@ -366,6 +377,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
               <div className="text-xs text-white/50">Host • {displayCode}</div>
             </div>
           </div>
+          <div className="flex items-center gap-2">
           <button
             onClick={() => setShowProfilePanel(true)}
             className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
@@ -380,6 +392,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
           >
             <Settings className="w-5 h-5" />
           </button>
+          </div>
           <button
             onClick={() => setShowEndPartyModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all duration-200 text-sm"
