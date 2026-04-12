@@ -19,6 +19,7 @@ import {
   heartbeatLimiter,
   regenerateCodeLimiter,
 } from '../middleware/rateLimits.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 let io: Server;
 
@@ -29,8 +30,9 @@ export function setSocketIO(socketIO: Server) {
 const router = Router();
 
 // POST /party - Create party
-router.post('/party', createPartyLimiter, (req: Request, res: Response) => {
-  const { hostId, name, mood, kidFriendly, allowSuggestions } = req.body;
+router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Response) => {
+  const hostId = req.user!.uid;
+  const { name, mood, kidFriendly, allowSuggestions } = req.body;
 
   if (!hostId) {
     return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
@@ -87,8 +89,8 @@ router.get('/party/resolve', (req: Request, res: Response) => {
   res.json({ partyId });
 });
 
-// POST /party/:partyId/join - Join party
-router.post('/party/:partyId/join', joinPartyLimiter, (req: Request, res: Response) => {
+// POST /party/:partyId/join - Join party (guest-accessible)
+router.post('/party/:partyId/join', joinPartyLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId } = req.body;
 
@@ -164,9 +166,9 @@ router.get('/party/:partyId/state', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/start - Start party
-router.post('/party/:partyId/start', startPartyLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/start', startPartyLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId } = req.body;
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -204,13 +206,10 @@ router.post('/party/:partyId/start', startPartyLimiter, (req: Request, res: Resp
 });
 
 // POST /party/:partyId/seed - Seed queue with tracks (host only)
-router.post('/party/:partyId/seed', seedLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/seed', seedLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, tracks } = req.body;
-
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
+  const hostId = req.user!.uid;
+  const { tracks } = req.body;
 
   if (!tracks || !Array.isArray(tracks)) {
     return res.status(400).json(createError('INVALID_REQUEST', 'tracks must be an array'));
@@ -265,9 +264,9 @@ router.post('/party/:partyId/seed', seedLimiter, (req: Request, res: Response) =
 });
 
 // POST /party/:partyId/end - End party
-router.post('/party/:partyId/end', (req: Request, res: Response) => {
+router.post('/party/:partyId/end', requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId } = req.body;
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -287,8 +286,8 @@ router.post('/party/:partyId/end', (req: Request, res: Response) => {
   res.json({ status: 'ENDED' });
 });
 
-// POST /party/:partyId/heartbeat - Active tracking
-router.post('/party/:partyId/heartbeat', heartbeatLimiter, (req: Request, res: Response) => {
+// POST /party/:partyId/heartbeat - Active tracking (guest-accessible)
+router.post('/party/:partyId/heartbeat', heartbeatLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId } = req.body;
 
@@ -312,8 +311,8 @@ router.post('/party/:partyId/heartbeat', heartbeatLimiter, (req: Request, res: R
   res.json({ active: updated });
 });
 
-// POST /party/:partyId/vote - Vote on a song
-router.post('/party/:partyId/vote', voteLimiter, (req: Request, res: Response) => {
+// POST /party/:partyId/vote - Vote on a song (guest-accessible)
+router.post('/party/:partyId/vote', voteLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId, trackId, vote, context } = req.body;
 
@@ -436,8 +435,8 @@ router.post('/party/:partyId/vote', voteLimiter, (req: Request, res: Response) =
   });
 });
 
-// POST /party/:partyId/suggest - Suggest a song
-router.post('/party/:partyId/suggest', suggestLimiter, (req: Request, res: Response) => {
+// POST /party/:partyId/suggest - Suggest a song (guest-accessible)
+router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId, trackId, title, artist, albumArtUrl, explicit: isExplicit } = req.body;
 
@@ -580,12 +579,13 @@ router.post('/party/:partyId/suggest', suggestLimiter, (req: Request, res: Respo
 });
 
 // POST /party/:partyId/settings/mood - Update mood
-router.post('/party/:partyId/settings/mood', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/mood', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, mood } = req.body;
+  const hostId = req.user!.uid;
+  const { mood } = req.body;
 
-  if (!hostId || !mood) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and mood are required'));
+  if (!mood) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'mood is required'));
   }
 
   const party = store.getParty(partyId);
@@ -616,12 +616,13 @@ router.post('/party/:partyId/settings/mood', hostActionLimiter, (req: Request, r
 });
 
 // POST /party/:partyId/settings/kidFriendly - Toggle kid-friendly
-router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, kidFriendly } = req.body;
+  const hostId = req.user!.uid;
+  const { kidFriendly } = req.body;
 
-  if (!hostId || kidFriendly === undefined) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and kidFriendly are required'));
+  if (kidFriendly === undefined) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'kidFriendly is required'));
   }
 
   const party = store.getParty(partyId);
@@ -652,12 +653,13 @@ router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, (req: Req
 });
 
 // POST /party/:partyId/settings/allowSuggestions - Toggle guest suggestions
-router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, allowSuggestions } = req.body;
+  const hostId = req.user!.uid;
+  const { allowSuggestions } = req.body;
 
-  if (!hostId || allowSuggestions === undefined) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and allowSuggestions are required'));
+  if (allowSuggestions === undefined) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'allowSuggestions is required'));
   }
 
   const party = store.getParty(partyId);
@@ -688,12 +690,13 @@ router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, (req
 });
 
 // POST /party/:partyId/settings/locked - Lock/unlock the room
-router.post('/party/:partyId/settings/locked', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/locked', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, locked } = req.body;
+  const hostId = req.user!.uid;
+  const { locked } = req.body;
 
-  if (!hostId || locked === undefined) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and locked are required'));
+  if (locked === undefined) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'locked is required'));
   }
 
   const party = store.getParty(partyId);
@@ -724,12 +727,13 @@ router.post('/party/:partyId/settings/locked', hostActionLimiter, (req: Request,
 });
 
 // POST /party/:partyId/nowPlaying - Update now playing
-router.post('/party/:partyId/nowPlaying', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/nowPlaying', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId, trackId, startedAt } = req.body;
+  const hostId = req.user!.uid;
+  const { trackId, startedAt } = req.body;
 
-  if (!hostId || !trackId || !startedAt) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId, trackId, and startedAt are required'));
+  if (!trackId || !startedAt) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'trackId and startedAt are required'));
   }
 
   const party = store.getParty(partyId);
@@ -778,13 +782,9 @@ router.post('/party/:partyId/nowPlaying', hostActionLimiter, (req: Request, res:
 });
 
 // POST /party/:partyId/queue/:trackId/playNext - Move song to front of queue
-router.post('/party/:partyId/queue/:trackId/playNext', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/queue/:trackId/playNext', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
-  const { hostId } = req.body;
-
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -808,12 +808,13 @@ router.post('/party/:partyId/queue/:trackId/playNext', hostActionLimiter, (req: 
 });
 
 // POST /party/:partyId/queue/:trackId/pin - Pin or unpin a song
-router.post('/party/:partyId/queue/:trackId/pin', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/queue/:trackId/pin', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
-  const { hostId, isPinned } = req.body;
+  const hostId = req.user!.uid;
+  const { isPinned } = req.body;
 
-  if (!hostId || isPinned === undefined) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId and isPinned are required'));
+  if (isPinned === undefined) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'isPinned is required'));
   }
 
   const party = store.getParty(partyId);
@@ -838,13 +839,9 @@ router.post('/party/:partyId/queue/:trackId/pin', hostActionLimiter, (req: Reque
 });
 
 // POST /party/:partyId/skip - Advance to next song in queue
-router.post('/party/:partyId/skip', hostActionLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/skip', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId } = req.body;
-
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -875,13 +872,9 @@ router.post('/party/:partyId/skip', hostActionLimiter, (req: Request, res: Respo
 });
 
 // POST /party/:partyId/code/regenerate - Generate a new join code
-router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, (req: Request, res: Response) => {
+router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { hostId } = req.body;
-
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -903,13 +896,9 @@ router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, (req: Requ
 });
 
 // DELETE /party/:partyId/queue/:trackId - Host force-remove song
-router.delete('/party/:partyId/queue/:trackId', hostActionLimiter, (req: Request, res: Response) => {
+router.delete('/party/:partyId/queue/:trackId', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
-  const { hostId } = req.body;
-
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
+  const hostId = req.user!.uid;
 
   const party = store.getParty(partyId);
   if (!party) {

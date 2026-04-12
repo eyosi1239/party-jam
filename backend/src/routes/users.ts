@@ -4,25 +4,21 @@ import { db } from '../db/client.js';
 import { users, userMusicServices } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/crypto.js';
 import { userSyncLimiter, musicServiceLimiter } from '../middleware/rateLimits.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
 // ---------------------------------------------------------------------------
 // POST /api/users/sync
-// Called by the frontend on every Firebase login to upsert the user record.
-// Body: { firebaseUid, email, displayName, authProvider }
+// Token UID is authoritative — body fields are supplemental profile data.
 // ---------------------------------------------------------------------------
-router.post('/api/users/sync', userSyncLimiter, async (req, res) => {
-  const { firebaseUid, email, displayName, authProvider } = req.body as {
-    firebaseUid?: string;
+router.post('/api/users/sync', userSyncLimiter, requireAuth, async (req, res) => {
+  const firebaseUid = req.user!.uid;
+  const { email, displayName, authProvider } = req.body as {
     email?: string;
     displayName?: string;
     authProvider?: 'email' | 'google' | 'spotify';
   };
-
-  if (!firebaseUid) {
-    return res.status(400).json({ error: 'firebaseUid is required' });
-  }
 
   try {
     const [user] = await db
@@ -53,8 +49,9 @@ router.post('/api/users/sync', userSyncLimiter, async (req, res) => {
 // GET /api/users/:uid/music-services
 // Returns the list of services the user has connected (no tokens in response).
 // ---------------------------------------------------------------------------
-router.get('/api/users/:uid/music-services', musicServiceLimiter, async (req, res) => {
+router.get('/api/users/:uid/music-services', musicServiceLimiter, requireAuth, async (req, res) => {
   const { uid } = req.params;
+  if (req.user!.uid !== uid) return res.status(403).json({ error: 'Forbidden' });
 
   try {
     const user = await db.query.users.findFirst({
@@ -87,8 +84,9 @@ router.get('/api/users/:uid/music-services', musicServiceLimiter, async (req, re
 // Upserts a connected service for a user (called after OAuth completes).
 // Body: { accessToken, refreshToken, tokenExpiresAt, serviceUserId }
 // ---------------------------------------------------------------------------
-router.put('/api/users/:uid/music-services/:service', musicServiceLimiter, async (req, res) => {
+router.put('/api/users/:uid/music-services/:service', musicServiceLimiter, requireAuth, async (req, res) => {
   const { uid, service } = req.params;
+  if (req.user!.uid !== uid) return res.status(403).json({ error: 'Forbidden' });
   const { accessToken, refreshToken, tokenExpiresAt, serviceUserId } = req.body as {
     accessToken?: string;
     refreshToken?: string;
@@ -140,8 +138,9 @@ router.put('/api/users/:uid/music-services/:service', musicServiceLimiter, async
 // DELETE /api/users/:uid/music-services/:service
 // Removes a connected service (user disconnects Spotify/Apple Music).
 // ---------------------------------------------------------------------------
-router.delete('/api/users/:uid/music-services/:service', musicServiceLimiter, async (req, res) => {
+router.delete('/api/users/:uid/music-services/:service', musicServiceLimiter, requireAuth, async (req, res) => {
   const { uid, service } = req.params;
+  if (req.user!.uid !== uid) return res.status(403).json({ error: 'Forbidden' });
 
   try {
     const user = await db.query.users.findFirst({
