@@ -3,6 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { users, userMusicServices } from '../db/schema.js';
 import { encrypt, decrypt } from '../lib/crypto.js';
+import { userSyncLimiter, musicServiceLimiter } from '../middleware/rateLimits.js';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
 // Called by the frontend on every Firebase login to upsert the user record.
 // Body: { firebaseUid, email, displayName, authProvider }
 // ---------------------------------------------------------------------------
-router.post('/api/users/sync', async (req, res) => {
+router.post('/api/users/sync', userSyncLimiter, async (req, res) => {
   const { firebaseUid, email, displayName, authProvider } = req.body as {
     firebaseUid?: string;
     email?: string;
@@ -52,7 +53,7 @@ router.post('/api/users/sync', async (req, res) => {
 // GET /api/users/:uid/music-services
 // Returns the list of services the user has connected (no tokens in response).
 // ---------------------------------------------------------------------------
-router.get('/api/users/:uid/music-services', async (req, res) => {
+router.get('/api/users/:uid/music-services', musicServiceLimiter, async (req, res) => {
   const { uid } = req.params;
 
   try {
@@ -86,7 +87,7 @@ router.get('/api/users/:uid/music-services', async (req, res) => {
 // Upserts a connected service for a user (called after OAuth completes).
 // Body: { accessToken, refreshToken, tokenExpiresAt, serviceUserId }
 // ---------------------------------------------------------------------------
-router.put('/api/users/:uid/music-services/:service', async (req, res) => {
+router.put('/api/users/:uid/music-services/:service', musicServiceLimiter, async (req, res) => {
   const { uid, service } = req.params;
   const { accessToken, refreshToken, tokenExpiresAt, serviceUserId } = req.body as {
     accessToken?: string;
@@ -139,7 +140,7 @@ router.put('/api/users/:uid/music-services/:service', async (req, res) => {
 // DELETE /api/users/:uid/music-services/:service
 // Removes a connected service (user disconnects Spotify/Apple Music).
 // ---------------------------------------------------------------------------
-router.delete('/api/users/:uid/music-services/:service', async (req, res) => {
+router.delete('/api/users/:uid/music-services/:service', musicServiceLimiter, async (req, res) => {
   const { uid, service } = req.params;
 
   try {

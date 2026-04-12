@@ -11,11 +11,16 @@ import userRoutes from './routes/users.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { runMigrations } from './db/migrate.js';
 
+// FRONTEND_ORIGIN supports a comma-separated list for multi-origin prod setups.
+// e.g. "https://partyjam.app,https://www.partyjam.app"
+const allowedOrigins = ENV.FRONTEND_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+const corsOrigin = allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins;
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ENV.FRONTEND_ORIGIN,
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
   },
 });
@@ -24,7 +29,7 @@ const io = new Server(httpServer, {
 setSocketIO(io);
 
 // Middleware
-app.use(cors({ origin: ENV.FRONTEND_ORIGIN }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 app.use(globalLimiter);
 

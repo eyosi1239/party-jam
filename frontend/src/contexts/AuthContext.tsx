@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/firebase/config';
 import { doc, setDoc } from 'firebase/firestore';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
       setLoading(false);
+
+      // Sync user record to Postgres on every login
+      if (currentUser) {
+        const providerId = currentUser.providerData[0]?.providerId ?? 'password';
+        const authProvider =
+          providerId === 'google.com' ? 'google'
+          : providerId === 'spotify.com' ? 'spotify'
+          : 'email';
+
+        api.syncUser({
+          firebaseUid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          authProvider,
+        }).catch((err) => console.error('Failed to sync user:', err));
+      }
     });
     return unsubscribe;
   }, []);
