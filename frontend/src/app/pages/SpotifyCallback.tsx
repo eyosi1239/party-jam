@@ -3,7 +3,9 @@
  */
 
 import { useEffect, useState } from 'react';
-import { handleSpotifyCallback } from '@/lib/spotify';
+import { handleSpotifyCallback, getSpotifyTokens, getMe } from '@/lib/spotify';
+import { auth } from '@/firebase/config';
+import { api } from '@/lib/api';
 
 export function SpotifyCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -29,6 +31,23 @@ export function SpotifyCallback() {
 
       try {
         await handleSpotifyCallback(code);
+
+        // Persist tokens to backend if a Firebase user is signed in
+        const firebaseUser = auth?.currentUser;
+        if (firebaseUser) {
+          const tokens = getSpotifyTokens();
+          if (tokens) {
+            // Fetch Spotify user ID so we can store it alongside the tokens
+            const spotifyMe = await getMe().catch(() => null);
+            await api.connectMusicService(firebaseUser.uid, 'spotify', {
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
+              tokenExpiresAt: tokens.tokenExpiresAt,
+              serviceUserId: spotifyMe?.id ?? null,
+            }).catch((err) => console.error('Failed to store Spotify connection:', err));
+          }
+        }
+
         setStatus('success');
 
         // Redirect back to main app after 1 second

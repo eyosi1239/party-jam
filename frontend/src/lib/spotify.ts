@@ -244,6 +244,25 @@ async function spotifyRequest<T>(endpoint: string, options: RequestInit = {}): P
 }
 
 /**
+ * Returns the currently stored Spotify tokens for backend sync.
+ * Returns null if not logged in.
+ */
+export function getSpotifyTokens(): {
+  accessToken: string;
+  refreshToken: string | null;
+  tokenExpiresAt: string | null;
+} | null {
+  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!accessToken) return null;
+  const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  return {
+    accessToken,
+    refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
+    tokenExpiresAt: expiry ? new Date(parseInt(expiry)).toISOString() : null,
+  };
+}
+
+/**
  * Get current user's profile
  */
 export async function getMe(): Promise<SpotifyUser> {

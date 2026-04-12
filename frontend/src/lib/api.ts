@@ -226,6 +226,57 @@ class ApiClient {
       body: JSON.stringify({ hostId, tracks }),
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // User / music service endpoints
+  // ---------------------------------------------------------------------------
+
+  /** Upserts the user record in Postgres. Call on every Firebase login. */
+  async syncUser(data: {
+    firebaseUid: string;
+    email?: string | null;
+    displayName?: string | null;
+    authProvider: 'email' | 'google' | 'spotify';
+  }): Promise<{ id: string; firebaseUid: string }> {
+    return this.request('/api/users/sync', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /** Stores an OAuth token for a connected music service. */
+  async connectMusicService(
+    firebaseUid: string,
+    service: 'spotify' | 'apple_music' | 'deezer',
+    data: {
+      accessToken: string;
+      refreshToken?: string | null;
+      tokenExpiresAt?: string | null; // ISO date string
+      serviceUserId?: string | null;
+    }
+  ): Promise<{ ok: boolean }> {
+    return this.request(`/api/users/${firebaseUid}/music-services/${service}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /** Removes a connected music service. */
+  async disconnectMusicService(
+    firebaseUid: string,
+    service: 'spotify' | 'apple_music' | 'deezer'
+  ): Promise<{ ok: boolean }> {
+    return this.request(`/api/users/${firebaseUid}/music-services/${service}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /** Returns the list of services the user has connected (no tokens). */
+  async getMusicServices(firebaseUid: string): Promise<{
+    services: Array<{ service: string; serviceUserId: string | null; connectedAt: string; tokenExpiresAt: string | null }>;
+  }> {
+    return this.request(`/api/users/${firebaseUid}/music-services`);
+  }
 }
 
 // Export singleton instance
