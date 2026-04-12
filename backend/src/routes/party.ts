@@ -4,10 +4,48 @@
 
 import { Router, Request, Response } from 'express';
 import type { Server } from 'socket.io';
+import { z } from 'zod';
 import { store } from '../store.js';
 import { generateId, generateJoinCode, createError, randomSample } from '../utils.js';
 import { CONFIG } from '../config.js';
 import type { Party, PartyMember, VoteType, VoteContext, Song, Suggestion } from '../types.js';
+
+const MOODS = ['chill', 'hype', 'romantic', 'workout', 'focus'] as const;
+
+const CreatePartySchema = z.object({
+  name: z.string().max(60).optional(),
+  mood: z.enum(MOODS).default('chill'),
+  kidFriendly: z.boolean().default(false),
+  allowSuggestions: z.boolean().default(true),
+});
+
+const JoinPartySchema = z.object({
+  userId: z.string().min(1).max(128),
+  displayName: z.string().max(32).optional(),
+});
+
+const SuggestTrackSchema = z.object({
+  userId: z.string().min(1).max(128),
+  trackId: z.string().min(1).max(256),
+  title: z.string().max(200).optional(),
+  artist: z.string().max(200).optional(),
+  albumArtUrl: z.string().max(500).optional(),
+  explicit: z.boolean().optional(),
+});
+
+const UpdateMoodSchema = z.object({
+  mood: z.enum(MOODS),
+});
+
+/** Parses req.body against schema; returns data or sends 400 and returns null. */
+function parseBody<T>(schema: z.ZodType<T>, req: Request, res: Response): T | null {
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json(createError('INVALID_REQUEST', result.error.issues.map((i) => i.message).join('; ')));
+    return null;
+  }
+  return result.data;
+}
 import {
   createPartyLimiter,
   joinPartyLimiter,
@@ -32,12 +70,10 @@ const router = Router();
 // POST /party - Create party
 router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Response) => {
   const hostId = req.user!.uid;
-  const { name, mood, kidFriendly, allowSuggestions } = req.body;
+  const body = parseBody(CreatePartySchema, req, res);
+  if (!body) return;
 
-  if (!hostId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'hostId is required'));
-  }
-
+  const { name, mood, kidFriendly, allowSuggestions } = body;
   const partyId = generateId('party');
   const joinCode = generateJoinCode();
   const now = Date.now();
@@ -47,9 +83,9 @@ router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Respo
     hostId,
     ...(name ? { name } : {}),
     status: 'CREATED',
-    mood: mood || 'chill',
-    kidFriendly: kidFriendly ?? false,
-    allowSuggestions: allowSuggestions ?? true,
+    mood,
+    kidFriendly,
+    allowSuggestions,
     locked: false,
     createdAt: now,
   };
@@ -92,11 +128,9 @@ router.get('/party/resolve', (req: Request, res: Response) => {
 // POST /party/:partyId/join - Join party (guest-accessible)
 router.post('/party/:partyId/join', joinPartyLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { userId, displayName } = req.body;
-
-  if (!userId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'userId is required'));
-  }
+  const body = parseBody(JoinPartySchema, req, res);
+  if (!body) return;
+  const { userId, displayName } = body;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -439,11 +473,9 @@ router.post('/party/:partyId/vote', voteLimiter, optionalAuth, (req: Request, re
 // POST /party/:partyId/suggest - Suggest a song (guest-accessible)
 router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { userId, trackId, title, artist, albumArtUrl, explicit: isExplicit } = req.body;
-
-  if (!userId || !trackId) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'userId and trackId are required'));
-  }
+  const body = parseBody(SuggestTrackSchema, req, res);
+  if (!body) return;
+  const { userId, trackId, title, artist, albumArtUrl, explicit: isExplicit } = body;
 
   const party = store.getParty(partyId);
   if (!party) {
@@ -583,11 +615,9 @@ router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Reque
 router.post('/party/:partyId/settings/mood', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const hostId = req.user!.uid;
-  const { mood } = req.body;
-
-  if (!mood) {
-    return res.status(400).json(createError('INVALID_REQUEST', 'mood is required'));
-  }
+  const body = parseBody(UpdateMoodSchema, req, res);
+  if (!body) return;
+  const { mood } = body;
 
   const party = store.getParty(partyId);
   if (!party) {
