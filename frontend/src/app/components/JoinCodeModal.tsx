@@ -4,22 +4,26 @@ import { Modal } from './Modal';
 interface JoinCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onJoin: (code: string) => Promise<void>;
+  /** Called with the 6-char code and an optional display name */
+  onJoin: (code: string, displayName?: string) => Promise<void>;
+  /** When false, shows a name field and "no account needed" hint */
+  isLoggedIn?: boolean;
 }
 
-export function JoinCodeModal({ isOpen, onClose, onJoin }: JoinCodeModalProps) {
+export function JoinCodeModal({ isOpen, onClose, onJoin, isLoggedIn = false }: JoinCodeModalProps) {
   const [code, setCode] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setCode('');
+      setName('');
       setError(null);
       setLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setTimeout(() => codeInputRef.current?.focus(), 50);
     }
   }, [isOpen]);
 
@@ -34,7 +38,7 @@ export function JoinCodeModal({ isOpen, onClose, onJoin }: JoinCodeModalProps) {
     setError(null);
 
     try {
-      await onJoin(trimmed);
+      await onJoin(trimmed, name.trim() || undefined);
       onClose();
     } catch (err: any) {
       setError(err?.message ?? 'Invalid code. Please try again.');
@@ -73,20 +77,46 @@ export function JoinCodeModal({ isOpen, onClose, onJoin }: JoinCodeModalProps) {
       }
     >
       <div className="space-y-4">
-        <p>Enter the 6-character code from the host.</p>
-        <input
-          ref={inputRef}
-          type="text"
-          value={code}
-          onChange={(e) => {
-            setError(null);
-            setCode(e.target.value.toUpperCase().slice(0, 6));
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="ABC123"
-          maxLength={6}
-          className="w-full text-center text-3xl font-bold tracking-[0.4em] py-4 px-3 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-white/20 outline-none focus:border-purple-500 focus:shadow-[0_0_12px_rgba(168,85,247,0.3)] transition-all duration-200 uppercase"
-        />
+        {!isLoggedIn && (
+          <p className="text-sm text-purple-400/80 bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2">
+            No account needed — just enter the code to join as a guest.
+          </p>
+        )}
+
+        <div>
+          <p className="text-white/60 text-sm mb-2">Enter the 6-character code from the host.</p>
+          <input
+            ref={codeInputRef}
+            type="text"
+            value={code}
+            onChange={(e) => {
+              setError(null);
+              setCode(e.target.value.toUpperCase().slice(0, 6));
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="ABC123"
+            maxLength={6}
+            className="w-full text-center text-3xl font-bold tracking-[0.4em] py-4 px-3 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-white/20 outline-none focus:border-purple-500 focus:shadow-[0_0_12px_rgba(168,85,247,0.3)] transition-all duration-200 uppercase"
+          />
+        </div>
+
+        {!isLoggedIn && (
+          <div>
+            <label className="block text-sm text-white/60 mb-1.5">
+              Your name <span className="text-white/30">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value.slice(0, 32))}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. Alex"
+              maxLength={32}
+              className="w-full py-2.5 px-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 outline-none focus:border-purple-500 transition-all duration-200 text-sm"
+            />
+          </div>
+        )}
+
         {error && (
           <p className="text-red-400 text-sm text-center">{error}</p>
         )}

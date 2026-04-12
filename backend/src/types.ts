@@ -23,6 +23,7 @@ export interface Party {
 
 export interface PartyMember {
   userId: string;
+  displayName?: string;
   role: UserRole;
   joinedAt: number;
   lastActiveAt: number;
