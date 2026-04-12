@@ -22,6 +22,8 @@ import type {
   ApiError,
 } from './types';
 
+import { auth } from '@/firebase/config';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 class ApiClient {
@@ -31,15 +33,27 @@ class ApiClient {
     this.baseURL = baseURL;
   }
 
+  /** Gets the current Firebase ID token, or null if not signed in. */
+  private async getIdToken(): Promise<string | null> {
+    try {
+      return (await auth?.currentUser?.getIdToken()) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const idToken = await this.getIdToken();
+
     const config: RequestInit = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         ...options.headers,
       },
     };

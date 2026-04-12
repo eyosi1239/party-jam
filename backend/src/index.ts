@@ -1,8 +1,21 @@
 import 'dotenv/config';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+
+// Initialize Firebase Admin SDK once (uses service account env vars)
+if (getApps().length === 0) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Private key comes from env as a single string with literal \n — replace to real newlines
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 import { ENV } from './config.js';
 import { store } from './store.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
