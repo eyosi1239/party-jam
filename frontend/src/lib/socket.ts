@@ -124,9 +124,11 @@ class PartySocketClient {
   private currentUserId: string | null = null;
 
   /**
-   * Connect to the socket server
+   * Connect to the socket server.
+   * @param token Optional Firebase ID token — required for authenticated users,
+   *              omit for anonymous guests.
    */
-  connect(): Socket {
+  connect(token?: string): Socket {
     if (this.socket?.connected) {
       return this.socket;
     }
@@ -137,6 +139,7 @@ class PartySocketClient {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5,
+      auth: token ? { token } : {},
     });
 
     this.socket.on('connect', () => {
@@ -288,7 +291,7 @@ class PartySocketClient {
 export const socketClient = new PartySocketClient();
 
 // Convenience exports
-export const connectSocket = () => socketClient.connect();
+export const connectSocket = (token?: string) => socketClient.connect(token);
 export const disconnectSocket = () => socketClient.disconnect();
 export const joinPartyRoom = (partyId: string, userId: string) =>
   socketClient.joinPartyRoom(partyId, userId);
