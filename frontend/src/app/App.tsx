@@ -2,6 +2,7 @@ import { LoginCard } from '@/app/components/LoginCard';
 import { SignUpCard } from '@/app/components/SignUpCard';
 import { GuestView } from '@/app/pages/GuestView';
 import { HostView } from '@/app/pages/HostView';
+import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SpotifyProvider, useSpotify } from '@/contexts/SpotifyContext';
 import { AppleMusicProvider, useAppleMusic } from '@/contexts/AppleMusicContext';
@@ -115,11 +116,17 @@ function AppContent() {
   // Open join modal
   const handleJoinParty = () => setShowJoinModal(true);
 
-  // Called by JoinCodeModal with the resolved code
-  const handleJoinWithCode = async (joinCode: string) => {
+  // Called by JoinCodeModal with the resolved code and optional guest name
+  const handleJoinWithCode = async (joinCode: string, displayName?: string) => {
     const { partyId } = await api.resolveJoinCode(joinCode);
     const userId = user?.uid ?? spotify.user?.id ?? appleMusic.user?.id ?? `guest_${Date.now()}`;
-    await party.joinParty(partyId, userId);
+    // Prefer account display name for logged-in users; use typed name for guests
+    const resolvedName = user?.displayName
+      || (spotify.user as any)?.display_name
+      || (appleMusic.user as any)?.name
+      || displayName
+      || undefined;
+    await party.joinParty(partyId, userId, resolvedName);
   };
 
   const handleAppleMusicLogin = async () => {
@@ -185,28 +192,32 @@ function AppContent() {
         )}
 
         {currentView === 'guest' && (
-          <GuestView
-            partyState={party.partyState}
-            partyId={party.partyId}
-            userId={party.userId}
-            joinCode={party.joinCode}
-            onVote={party.vote}
-            onCreateParty={handleCreateParty}
-            onJoinParty={handleJoinParty}
-            onLeaveRoom={party.leaveParty}
-          />
+          <ErrorBoundary section="Guest view">
+            <GuestView
+              partyState={party.partyState}
+              partyId={party.partyId}
+              userId={party.userId}
+              joinCode={party.joinCode}
+              onVote={party.vote}
+              onCreateParty={handleCreateParty}
+              onJoinParty={handleJoinParty}
+              onLeaveRoom={party.leaveParty}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'host' && (
-          <HostView
-            partyState={party.partyState}
-            joinCode={party.joinCode}
-            queueLowSignal={party.queueLowSignal}
-            onStartParty={party.startParty}
-            onUpdateSettings={party.updateSettings}
-            onRegenerateCode={party.regenerateCode}
-            onLeaveRoom={party.leaveParty}
-          />
+          <ErrorBoundary section="Host view">
+            <HostView
+              partyState={party.partyState}
+              joinCode={party.joinCode}
+              queueLowSignal={party.queueLowSignal}
+              onStartParty={party.startParty}
+              onUpdateSettings={party.updateSettings}
+              onRegenerateCode={party.regenerateCode}
+              onLeaveRoom={party.leaveParty}
+            />
+          </ErrorBoundary>
         )}
 
         {currentView === 'login' && (
@@ -237,6 +248,7 @@ function AppContent() {
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
         onJoin={handleJoinWithCode}
+        isLoggedIn={isLoggedIn}
       />
 
       <CreatePartyModal

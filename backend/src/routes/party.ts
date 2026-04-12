@@ -80,7 +80,7 @@ router.get('/party/resolve', (req: Request, res: Response) => {
 // POST /party/:partyId/join - Join party
 router.post('/party/:partyId/join', joinPartyLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
-  const { userId } = req.body;
+  const { userId, displayName } = req.body;
 
   if (!userId) {
     return res.status(400).json(createError('INVALID_REQUEST', 'userId is required'));
@@ -107,6 +107,7 @@ router.post('/party/:partyId/join', joinPartyLimiter, (req: Request, res: Respon
     // New member
     member = {
       userId,
+      ...(displayName?.trim() ? { displayName: displayName.trim() } : {}),
       role: 'GUEST',
       joinedAt: now,
       lastActiveAt: now,

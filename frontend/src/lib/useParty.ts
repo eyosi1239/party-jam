@@ -35,7 +35,7 @@ export interface UsePartyResult {
 
   // Actions
   createParty: (userId: string, mood?: string, name?: string) => Promise<void>;
-  joinParty: (partyId: string, userId: string) => Promise<void>;
+  joinParty: (partyId: string, userId: string, displayName?: string) => Promise<void>;
   startParty: () => Promise<void>;
   vote: (trackId: string, vote: 'UP' | 'DOWN' | 'NONE', context: 'QUEUE' | 'TESTING') => Promise<void>;
   updateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
@@ -92,13 +92,13 @@ export function useParty(): UsePartyResult {
   }, []);
 
   // Join an existing party (guest)
-  const joinParty = useCallback(async (pid: string, uid: string) => {
+  const joinParty = useCallback(async (pid: string, uid: string, displayName?: string) => {
     try {
       setLoading(true);
       setError(null);
       setPartyEndedByHost(false);
 
-      await api.joinParty(pid, { userId: uid });
+      await api.joinParty(pid, { userId: uid, ...(displayName ? { displayName } : {}) });
 
       setPartyId(pid);
       setUserId(uid);
