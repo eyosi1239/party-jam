@@ -4,6 +4,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
 
 // Initialize Firebase Admin SDK once (uses service account env vars)
 if (getApps().length === 0) {
@@ -42,6 +43,11 @@ const io = new Server(httpServer, {
 setSocketIO(io);
 
 // Middleware
+app.use(helmet({
+  // CSP is handled at the CDN/host level for the frontend; keep it off here
+  // so API responses aren't blocked by overly strict defaults.
+  contentSecurityPolicy: false,
+}));
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 app.use(globalLimiter);
