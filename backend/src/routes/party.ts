@@ -8,7 +8,17 @@ import { store } from '../store.js';
 import { generateId, generateJoinCode, createError, randomSample } from '../utils.js';
 import { CONFIG } from '../config.js';
 import type { Party, PartyMember, VoteType, VoteContext, Song, Suggestion } from '../types.js';
-import { createPartyLimiter, joinPartyLimiter, voteLimiter, suggestLimiter, seedLimiter } from '../middleware/rateLimits.js';
+import {
+  createPartyLimiter,
+  joinPartyLimiter,
+  voteLimiter,
+  suggestLimiter,
+  seedLimiter,
+  hostActionLimiter,
+  startPartyLimiter,
+  heartbeatLimiter,
+  regenerateCodeLimiter,
+} from '../middleware/rateLimits.js';
 
 let io: Server;
 
@@ -154,7 +164,7 @@ router.get('/party/:partyId/state', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/start - Start party
-router.post('/party/:partyId/start', (req: Request, res: Response) => {
+router.post('/party/:partyId/start', startPartyLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId } = req.body;
 
@@ -278,7 +288,7 @@ router.post('/party/:partyId/end', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/heartbeat - Active tracking
-router.post('/party/:partyId/heartbeat', (req: Request, res: Response) => {
+router.post('/party/:partyId/heartbeat', heartbeatLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { userId } = req.body;
 
@@ -570,7 +580,7 @@ router.post('/party/:partyId/suggest', suggestLimiter, (req: Request, res: Respo
 });
 
 // POST /party/:partyId/settings/mood - Update mood
-router.post('/party/:partyId/settings/mood', (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/mood', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, mood } = req.body;
 
@@ -606,7 +616,7 @@ router.post('/party/:partyId/settings/mood', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/settings/kidFriendly - Toggle kid-friendly
-router.post('/party/:partyId/settings/kidFriendly', (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, kidFriendly } = req.body;
 
@@ -642,7 +652,7 @@ router.post('/party/:partyId/settings/kidFriendly', (req: Request, res: Response
 });
 
 // POST /party/:partyId/settings/allowSuggestions - Toggle guest suggestions
-router.post('/party/:partyId/settings/allowSuggestions', (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, allowSuggestions } = req.body;
 
@@ -678,7 +688,7 @@ router.post('/party/:partyId/settings/allowSuggestions', (req: Request, res: Res
 });
 
 // POST /party/:partyId/settings/locked - Lock/unlock the room
-router.post('/party/:partyId/settings/locked', (req: Request, res: Response) => {
+router.post('/party/:partyId/settings/locked', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, locked } = req.body;
 
@@ -714,7 +724,7 @@ router.post('/party/:partyId/settings/locked', (req: Request, res: Response) => 
 });
 
 // POST /party/:partyId/nowPlaying - Update now playing
-router.post('/party/:partyId/nowPlaying', (req: Request, res: Response) => {
+router.post('/party/:partyId/nowPlaying', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId, trackId, startedAt } = req.body;
 
@@ -768,7 +778,7 @@ router.post('/party/:partyId/nowPlaying', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/queue/:trackId/playNext - Move song to front of queue
-router.post('/party/:partyId/queue/:trackId/playNext', (req: Request, res: Response) => {
+router.post('/party/:partyId/queue/:trackId/playNext', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
   const { hostId } = req.body;
 
@@ -798,7 +808,7 @@ router.post('/party/:partyId/queue/:trackId/playNext', (req: Request, res: Respo
 });
 
 // POST /party/:partyId/queue/:trackId/pin - Pin or unpin a song
-router.post('/party/:partyId/queue/:trackId/pin', (req: Request, res: Response) => {
+router.post('/party/:partyId/queue/:trackId/pin', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
   const { hostId, isPinned } = req.body;
 
@@ -828,7 +838,7 @@ router.post('/party/:partyId/queue/:trackId/pin', (req: Request, res: Response) 
 });
 
 // POST /party/:partyId/skip - Advance to next song in queue
-router.post('/party/:partyId/skip', (req: Request, res: Response) => {
+router.post('/party/:partyId/skip', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId } = req.body;
 
@@ -865,7 +875,7 @@ router.post('/party/:partyId/skip', (req: Request, res: Response) => {
 });
 
 // POST /party/:partyId/code/regenerate - Generate a new join code
-router.post('/party/:partyId/code/regenerate', (req: Request, res: Response) => {
+router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, (req: Request, res: Response) => {
   const { partyId } = req.params;
   const { hostId } = req.body;
 
@@ -893,7 +903,7 @@ router.post('/party/:partyId/code/regenerate', (req: Request, res: Response) => 
 });
 
 // DELETE /party/:partyId/queue/:trackId - Host force-remove song
-router.delete('/party/:partyId/queue/:trackId', (req: Request, res: Response) => {
+router.delete('/party/:partyId/queue/:trackId', hostActionLimiter, (req: Request, res: Response) => {
   const { partyId, trackId } = req.params;
   const { hostId } = req.body;
 
