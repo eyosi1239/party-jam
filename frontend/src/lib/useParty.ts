@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { getAuth } from 'firebase/auth';
 import { api } from './api';
 import {
   connectSocket,
@@ -14,6 +15,15 @@ import {
   offSocketEvent,
 } from './socket';
 import type { PartyState, Song } from './types';
+
+/** Gets the current Firebase ID token, or undefined for anonymous guests. */
+async function getFirebaseToken(): Promise<string | undefined> {
+  try {
+    return (await getAuth().currentUser?.getIdToken()) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export interface UsePartyResult {
   // State
@@ -77,8 +87,9 @@ export function useParty(): UsePartyResult {
       const state = await api.getPartyState(result.partyId, uid);
       setPartyState(state);
 
-      // Connect socket
-      connectSocket();
+      // Connect socket with Firebase token so server can verify identity
+      const token = await getFirebaseToken();
+      connectSocket(token);
       joinPartyRoom(result.partyId, uid);
       startHeartbeat(result.partyId, uid);
 
@@ -108,8 +119,9 @@ export function useParty(): UsePartyResult {
       const state = await api.getPartyState(pid, uid);
       setPartyState(state);
 
-      // Connect socket
-      connectSocket();
+      // Connect socket — guests have no token, authenticated users pass their Firebase token
+      const token = await getFirebaseToken();
+      connectSocket(token);
       joinPartyRoom(pid, uid);
       startHeartbeat(pid, uid);
 

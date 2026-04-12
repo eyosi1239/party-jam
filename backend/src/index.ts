@@ -23,6 +23,7 @@ import appleMusicRoutes from './routes/appleMusic.js';
 import userRoutes from './routes/users.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { runMigrations } from './db/migrate.js';
+import { getAuth } from 'firebase-admin/auth';
 
 // FRONTEND_ORIGIN supports a comma-separated list for multi-origin prod setups.
 // e.g. "https://partyjam.app,https://www.partyjam.app"
@@ -56,6 +57,22 @@ app.use('/', partyRoutes);
 app.use('/', appleMusicRoutes);
 app.use('/', userRoutes);
 
+// Socket.io auth middleware — verifies Firebase token if present, guests pass through
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth?.token as string | undefined;
+  if (token) {
+    try {
+      const decoded = await getAuth().verifyIdToken(token);
+      socket.data.uid = decoded.uid;
+    } catch {
+      // Invalid token — reject the connection outright
+      return next(new Error('Invalid auth token'));
+    }
+  }
+  // No token = anonymous guest, allowed
+  next();
+});
+
 // Socket.io connection
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
@@ -66,6 +83,15 @@ io.on('connection', (socket) => {
       socket.emit('party:error', {
         code: 'INVALID_REQUEST',
         message: 'partyId and userId are required',
+      });
+      return;
+    }
+
+    // If the socket has a verified Firebase UID, ensure the client isn't spoofing a different userId
+    if (socket.data.uid && socket.data.uid !== userId) {
+      socket.emit('party:error', {
+        code: 'UNAUTHORIZED',
+        message: 'userId does not match authenticated user',
       });
       return;
     }
