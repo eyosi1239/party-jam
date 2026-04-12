@@ -7,7 +7,9 @@ import { ENV } from './config.js';
 import { store } from './store.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
 import appleMusicRoutes from './routes/appleMusic.js';
+import userRoutes from './routes/users.js';
 import { globalLimiter } from './middleware/rateLimits.js';
+import { runMigrations } from './db/migrate.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -34,6 +36,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/', partyRoutes);
 app.use('/', appleMusicRoutes);
+app.use('/', userRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
@@ -125,10 +128,17 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
-httpServer.listen(ENV.PORT, () => {
-  console.log(`🎵 Party Jam backend running on port ${ENV.PORT}`);
-  console.log(`   Frontend origin: ${ENV.FRONTEND_ORIGIN}`);
-});
+// Run DB migrations then start server
+runMigrations()
+  .then(() => {
+    httpServer.listen(ENV.PORT, () => {
+      console.log(`🎵 Party Jam backend running on port ${ENV.PORT}`);
+      console.log(`   Frontend origin: ${ENV.FRONTEND_ORIGIN}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to run migrations:', err);
+    process.exit(1);
+  });
 
 export { io };
