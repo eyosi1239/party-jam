@@ -71,6 +71,7 @@ export function useParty(): UsePartyResult {
       setPartyId(result.partyId);
       setJoinCode(result.joinCode);
       setUserId(uid);
+      setQueueLowSignal(0);
 
       // Load initial state
       const state = await api.getPartyState(result.partyId, uid);
@@ -101,6 +102,7 @@ export function useParty(): UsePartyResult {
 
       setPartyId(pid);
       setUserId(uid);
+      setQueueLowSignal(0);
 
       // Load initial state
       const state = await api.getPartyState(pid, uid);
@@ -215,6 +217,7 @@ export function useParty(): UsePartyResult {
     setPartyId(null);
     setJoinCode(null);
     setUserId(null);
+    setQueueLowSignal(0);
   }, []);
 
   // Set up socket event listeners
@@ -351,6 +354,7 @@ export function useParty(): UsePartyResult {
       setPartyId(null);
       setJoinCode(null);
       setUserId(null);
+      setQueueLowSignal(0);
     };
 
     // Register listeners
