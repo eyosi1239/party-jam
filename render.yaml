@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: party-jam-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install --include=dev && npm run build && cp -r src/db/migrations dist/db/migrations
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+  - type: web
+    name: party-jam-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
