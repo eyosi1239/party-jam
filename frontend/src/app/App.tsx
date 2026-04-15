@@ -43,6 +43,11 @@ function AppContent() {
     }
   }, [party.partyState, party.partyId, party.userId]);
 
+  // Propagate party-level errors (e.g. "Party session expired") up to the app toast
+  useEffect(() => {
+    if (party.error) setAppError(party.error);
+  }, [party.error]);
+
   // Logged in = Firebase user OR Spotify user OR Apple Music user
   const isLoggedIn = !!user || !!spotify.user || !!appleMusic.user;
 
