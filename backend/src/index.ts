@@ -118,8 +118,19 @@ io.on('connection', (socket) => {
     const roomName = `party:${partyId}`;
     socket.join(roomName);
 
-    // Update member activity
-    store.updateMemberActivity(partyId, userId);
+    // Re-insert the member if they're not in the map (e.g. after a backend restart
+    // that restored party metadata from DB but cleared the in-memory members map).
+    if (!store.getMember(partyId, userId)) {
+      const now = Date.now();
+      store.addMember(partyId, {
+        userId,
+        role: userId === party.hostId ? 'HOST' : 'GUEST',
+        joinedAt: now,
+        lastActiveAt: now,
+      });
+    } else {
+      store.updateMemberActivity(partyId, userId);
+    }
 
     // Get active members count
     const activeMembersCount = store.getActiveMembersCount(partyId);
@@ -161,8 +172,18 @@ io.on('connection', (socket) => {
     // Get count before update
     const beforeCount = store.getActiveMembersCount(partyId);
 
-    // Update member activity
-    store.updateMemberActivity(partyId, userId);
+    // Re-insert the member if absent (e.g. after a backend restart)
+    if (!store.getMember(partyId, userId)) {
+      const now = Date.now();
+      store.addMember(partyId, {
+        userId,
+        role: userId === party.hostId ? 'HOST' : 'GUEST',
+        joinedAt: now,
+        lastActiveAt: now,
+      });
+    } else {
+      store.updateMemberActivity(partyId, userId);
+    }
 
     // Get count after update
     const afterCount = store.getActiveMembersCount(partyId);
