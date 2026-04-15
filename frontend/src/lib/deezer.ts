@@ -1,9 +1,9 @@
 /**
- * Deezer public REST API — no API key required, CORS-enabled.
+ * Deezer search — proxied through our backend to avoid CORS restrictions.
  * Used as a free fallback music provider when Spotify is not connected.
  */
 
-const DEEZER_API = 'https://api.deezer.com';
+const DEEZER_API = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/deezer`;
 
 // Mood → search keywords for Deezer
 const MOOD_QUERIES: Record<string, string> = {
