@@ -182,37 +182,41 @@ class PartySocketClient {
   }
 
   /**
-   * Join a party room
-   * Emits party:join and the server will add the socket to the party room
+   * Join a party room.
+   * Stores partyId/userId immediately so the on('connect') handler can
+   * re-emit party:join once the socket handshake completes (which is async).
    */
   joinPartyRoom(partyId: string, userId: string): void {
-    if (!this.socket?.connected) {
-      console.error('[Socket] Not connected. Call connect() first.');
-      return;
-    }
-
+    // Always store so the connect handler can re-join after reconnects
     this.currentPartyId = partyId;
     this.currentUserId = userId;
+
+    if (!this.socket?.connected) {
+      console.log('[Socket] Not yet connected — will join room once connected:', partyId);
+      return;
+    }
 
     this.socket.emit('party:join', { partyId, userId });
     console.log('[Socket] Joining party room:', partyId, 'as user:', userId);
   }
 
   /**
-   * Start sending heartbeats to maintain active status
-   * Emits party:heartbeat every 30 seconds
+   * Start sending heartbeats to maintain active status.
+   * Stores partyId/userId immediately so the connect handler can restart
+   * heartbeats after reconnect.
    */
   startHeartbeat(partyId: string, userId: string): void {
     // Clear any existing heartbeat
     this.stopHeartbeat();
 
-    if (!this.socket?.connected) {
-      console.error('[Socket] Not connected. Call connect() first.');
-      return;
-    }
-
+    // Always store so the connect handler can restart after reconnect
     this.currentPartyId = partyId;
     this.currentUserId = userId;
+
+    if (!this.socket?.connected) {
+      console.log('[Socket] Not yet connected — heartbeat will start once connected:', partyId);
+      return;
+    }
 
     // Send initial heartbeat immediately
     this.socket.emit('party:heartbeat', { partyId, userId });
@@ -240,14 +244,16 @@ class PartySocketClient {
   }
 
   /**
-   * Register a typed event listener
+   * Register a typed event listener.
+   * Socket.io allows registering listeners before the socket is connected —
+   * they fire once the connection is established.
    */
   on<K extends keyof SocketEventHandlers>(
     event: K,
     handler: SocketEventHandlers[K]
   ): void {
     if (!this.socket) {
-      console.error('[Socket] Not connected. Call connect() first.');
+      console.warn('[Socket] No socket instance — call connect() first.');
       return;
     }
 

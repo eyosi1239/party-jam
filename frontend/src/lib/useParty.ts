@@ -25,6 +25,12 @@ async function getFirebaseToken(): Promise<string | undefined> {
   }
 }
 
+/** Returns true when an error indicates the party no longer exists on the server. */
+function isPartyNotFound(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('Party not found') || msg.includes('PARTY_NOT_FOUND');
+}
+
 export interface UsePartyResult {
   // State
   partyState: PartyState | null;
@@ -127,7 +133,8 @@ export function useParty(): UsePartyResult {
 
       console.log('✅ Joined party:', pid);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join party');
+      const msg = err instanceof Error ? err.message : 'Failed to join party';
+      setError(isPartyNotFound(err) ? 'That party no longer exists. The host may need to create a new one.' : msg);
       console.error('Failed to join party:', err);
     } finally {
       setLoading(false);
@@ -150,7 +157,17 @@ export function useParty(): UsePartyResult {
 
       console.log('✅ Party started');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start party');
+      if (isPartyNotFound(err)) {
+        setError('This party no longer exists on the server. Please create a new party.');
+        stopHeartbeat();
+        disconnectSocket();
+        setPartyState(null);
+        setPartyId(null);
+        setJoinCode(null);
+        setUserId(null);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to start party');
+      }
       console.error('Failed to start party:', err);
     } finally {
       setLoading(false);
@@ -207,6 +224,15 @@ export function useParty(): UsePartyResult {
       }
     } catch (err) {
       console.error('Failed to update settings:', err);
+      if (isPartyNotFound(err)) {
+        setError('This party no longer exists on the server. Please create a new party.');
+        stopHeartbeat();
+        disconnectSocket();
+        setPartyState(null);
+        setPartyId(null);
+        setJoinCode(null);
+        setUserId(null);
+      }
     }
   }, [partyId, userId]);
 
