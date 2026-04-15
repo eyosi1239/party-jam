@@ -336,7 +336,10 @@ export async function playTrackOnDevice(deviceId: string, uri: string): Promise<
  */
 export function isLoggedIn(): boolean {
   const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-  return !!accessToken;
+  if (!accessToken) return false;
+  const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  if (expiry && Date.now() >= parseInt(expiry)) return false;
+  return true;
 }
 
 /**
