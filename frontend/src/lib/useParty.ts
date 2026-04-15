@@ -318,8 +318,19 @@ export function useParty(): UsePartyResult {
       });
     };
 
-    // Remove expired suggestion
+    // Remove expired or rejected suggestion
     const handleSuggestionExpired = (data: any) => {
+      setPartyState((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          testingSuggestions: prev.testingSuggestions.filter((s) => s.trackId !== data.trackId),
+        };
+      });
+    };
+
+    // Remove promoted suggestion from testing list (it was accepted and added to queue)
+    const handleSuggestionPromoted = (data: any) => {
       setPartyState((prev) => {
         if (!prev) return prev;
         return {
@@ -377,6 +388,7 @@ export function useParty(): UsePartyResult {
     onSocketEvent('party:nowPlaying', handleNowPlaying);
     onSocketEvent('party:suggestionTesting', handleSuggestionTesting);
     onSocketEvent('party:suggestionExpired', handleSuggestionExpired);
+    onSocketEvent('party:suggestionPromoted', handleSuggestionPromoted);
     onSocketEvent('party:codeRegenerated', handleCodeRegenerated);
     onSocketEvent('party:membersUpdated', handleMembersUpdated);
     onSocketEvent('party:error', handleError);
@@ -392,6 +404,7 @@ export function useParty(): UsePartyResult {
       offSocketEvent('party:nowPlaying', handleNowPlaying);
       offSocketEvent('party:suggestionTesting', handleSuggestionTesting);
       offSocketEvent('party:suggestionExpired', handleSuggestionExpired);
+      offSocketEvent('party:suggestionPromoted', handleSuggestionPromoted);
       offSocketEvent('party:codeRegenerated', handleCodeRegenerated);
       offSocketEvent('party:membersUpdated', handleMembersUpdated);
       offSocketEvent('party:error', handleError);

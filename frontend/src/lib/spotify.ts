@@ -332,13 +332,19 @@ export async function playTrackOnDevice(deviceId: string, uri: string): Promise<
 }
 
 /**
- * Check if user is logged in
+ * Check if user is logged in to Spotify.
+ * Returns true if a valid access token is present, OR if an access token exists
+ * with a refresh token (even if expired) — getAccessToken() will auto-refresh it.
  */
 export function isLoggedIn(): boolean {
   const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
   if (!accessToken) return false;
   const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-  if (expiry && Date.now() >= parseInt(expiry)) return false;
+  if (expiry && Date.now() >= parseInt(expiry)) {
+    // Token is expired — still considered connected if we have a refresh token.
+    // The next API call will trigger an automatic refresh via getAccessToken().
+    return !!localStorage.getItem(REFRESH_TOKEN_KEY);
+  }
   return true;
 }
 

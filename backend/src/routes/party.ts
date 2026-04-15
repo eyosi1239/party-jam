@@ -510,6 +510,11 @@ router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Reque
   const sampleMembers = randomSample(activeMembers, sampleSize);
   const sampleUserIds = sampleMembers.map((m) => m.userId);
 
+  // Always include the host so they see every suggestion regardless of sample
+  if (!sampleUserIds.includes(party.hostId)) {
+    sampleUserIds.push(party.hostId);
+  }
+
   // Build song from metadata sent by the client
   const song: Song = {
     trackId,
@@ -536,26 +541,14 @@ router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Reque
     partyData.suggestions.set(trackId, suggestion);
   }
 
-  // Emit to sampled users only
+  // Broadcast once to entire room — frontend filters by sampleUserIds
   if (io) {
-    sampleUserIds.forEach((sampledUserId) => {
-      // Find socket(s) for this user in the party room
-      const roomName = `party:${partyId}`;
-      const room = io.sockets.adapter.rooms.get(roomName);
-      if (room) {
-        room.forEach((socketId) => {
-          const socket = io.sockets.sockets.get(socketId);
-          // In a real app, you'd track userId per socket
-          // For now, broadcast to all in room with filter info
-          socket?.emit('party:suggestionTesting', {
-            trackId,
-            status: 'TESTING',
-            expiresAt: Date.now() + CONFIG.SUGGEST_EXPIRE_AT_MS,
-            song,
-            sampleUserIds, // Frontend can check if current user is in sample
-          });
-        });
-      }
+    io.to(`party:${partyId}`).emit('party:suggestionTesting', {
+      trackId,
+      status: 'TESTING',
+      expiresAt: Date.now() + CONFIG.SUGGEST_EXPIRE_AT_MS,
+      song,
+      sampleUserIds,
     });
   }
 
@@ -924,6 +917,80 @@ router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, requireAut
   }
 
   res.json({ joinCode: newCode });
+});
+
+// POST /party/:partyId/suggestions/:trackId/accept - Host accepts suggestion (bypasses vote threshold)
+router.post('/party/:partyId/suggestions/:trackId/accept', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
+  const { partyId, trackId } = req.params;
+  const hostId = req.user!.uid;
+
+  const party = store.getParty(partyId);
+  if (!party) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  if (party.hostId !== hostId) {
+    return res.status(403).json(createError('NOT_HOST', 'Only host can accept suggestions'));
+  }
+
+  const partyData = store.getPartyData(partyId);
+  if (!partyData) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  const suggestion = store.getSuggestion(partyId, trackId);
+  if (!suggestion) {
+    return res.status(404).json(createError('SUGGESTION_NOT_FOUND', 'Suggestion not found'));
+  }
+
+  // Add directly to queue
+  suggestion.song.status = 'PROMOTED';
+  store.addToQueue(partyId, suggestion.song);
+  partyData.suggestions.delete(trackId);
+
+  if (io) {
+    io.to(`party:${partyId}`).emit('party:suggestionPromoted', { trackId, status: 'PROMOTED' });
+    const state = store.getState(partyId);
+    if (state) {
+      io.to(`party:${partyId}`).emit('party:queueUpdated', { queue: state.queue });
+    }
+  }
+
+  res.json({ ok: true });
+});
+
+// POST /party/:partyId/suggestions/:trackId/reject - Host rejects suggestion
+router.post('/party/:partyId/suggestions/:trackId/reject', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
+  const { partyId, trackId } = req.params;
+  const hostId = req.user!.uid;
+
+  const party = store.getParty(partyId);
+  if (!party) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  if (party.hostId !== hostId) {
+    return res.status(403).json(createError('NOT_HOST', 'Only host can reject suggestions'));
+  }
+
+  const partyData = store.getPartyData(partyId);
+  if (!partyData) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  const suggestion = store.getSuggestion(partyId, trackId);
+  if (!suggestion) {
+    return res.status(404).json(createError('SUGGESTION_NOT_FOUND', 'Suggestion not found'));
+  }
+
+  suggestion.song.status = 'EXPIRED';
+  partyData.suggestions.delete(trackId);
+
+  if (io) {
+    io.to(`party:${partyId}`).emit('party:suggestionExpired', { trackId, status: 'EXPIRED' });
+  }
+
+  res.json({ ok: true });
 });
 
 // DELETE /party/:partyId/queue/:trackId - Host force-remove song

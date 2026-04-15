@@ -28,10 +28,17 @@ const DEFAULT_STATE: SpotifyPlaybackState = {
   durationMs: 0,
 };
 
-export function useSpotifyPlayer(): UseSpotifyPlayerResult {
+export function useSpotifyPlayer(onTrackEnd?: () => void): UseSpotifyPlayerResult {
   const [playbackState, setPlaybackState] = useState<SpotifyPlaybackState>(DEFAULT_STATE);
   const playerRef = useRef<any>(null);
   const deviceIdRef = useRef<string | null>(null);
+  const onTrackEndRef = useRef(onTrackEnd);
+  const wasPlayingRef = useRef(false);
+
+  // Keep the callback ref current so the SDK listener always calls the latest version
+  useEffect(() => {
+    onTrackEndRef.current = onTrackEnd;
+  }, [onTrackEnd]);
 
   // Initialize the SDK and create the player once
   useEffect(() => {
@@ -63,9 +70,18 @@ export function useSpotifyPlayer(): UseSpotifyPlayerResult {
 
       player.addListener('player_state_changed', (state: any) => {
         if (!state) return;
+
+        const isNowPlaying = !state.paused;
+
+        // Detect track end: was playing, now paused at position 0 with a known duration
+        if (wasPlayingRef.current && !isNowPlaying && state.position === 0 && state.duration > 0) {
+          onTrackEndRef.current?.();
+        }
+        wasPlayingRef.current = isNowPlaying;
+
         setPlaybackState((prev) => ({
           ...prev,
-          isPlaying: !state.paused,
+          isPlaying: isNowPlaying,
           progressMs: state.position,
           durationMs: state.duration,
         }));
