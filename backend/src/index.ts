@@ -22,6 +22,7 @@ import { store } from './store.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
 import appleMusicRoutes from './routes/appleMusic.js';
 import userRoutes from './routes/users.js';
+import deezerRoutes from './routes/deezer.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { runMigrations } from './db/migrate.js';
 import { getAuth } from 'firebase-admin/auth';
@@ -62,6 +63,7 @@ app.get('/health', (req, res) => {
 app.use('/', partyRoutes);
 app.use('/', appleMusicRoutes);
 app.use('/', userRoutes);
+app.use('/', deezerRoutes);
 
 // Socket.io auth middleware — verifies Firebase token if present, guests pass through
 io.use(async (socket, next) => {
