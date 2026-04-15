@@ -9,6 +9,12 @@ import { store } from '../store.js';
 import { generateId, generateJoinCode, createError, randomSample } from '../utils.js';
 import { CONFIG } from '../config.js';
 import type { Party, PartyMember, VoteType, VoteContext, Song, Suggestion } from '../types.js';
+import {
+  saveParty,
+  updatePartyStatus,
+  updatePartySettings,
+  updateJoinCode,
+} from '../db/partyRepo.js';
 
 const MOODS = ['chill', 'hype', 'romantic', 'workout', 'focus'] as const;
 
@@ -92,6 +98,9 @@ router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Respo
 
   store.createParty(party);
   store.setJoinCode(joinCode, partyId);
+
+  // Persist to DB (fire-and-forget — don't block response)
+  saveParty(party, joinCode).catch((err) => console.error('[DB] saveParty failed:', err));
 
   // Add host as first member
   const hostMember: PartyMember = {
@@ -219,6 +228,7 @@ router.post('/party/:partyId/start', startPartyLimiter, requireAuth, (req: Reque
   }
 
   store.updateParty(partyId, { status: 'LIVE' });
+  updatePartyStatus(partyId, 'LIVE').catch((err) => console.error('[DB] updatePartyStatus failed:', err));
 
   // Auto-advance to first song if queue already has tracks
   const partyData = store.getPartyData(partyId);
@@ -313,6 +323,7 @@ router.post('/party/:partyId/end', requireAuth, (req: Request, res: Response) =>
   }
 
   store.updateParty(partyId, { status: 'ENDED' });
+  updatePartyStatus(partyId, 'ENDED').catch((err) => console.error('[DB] updatePartyStatus failed:', err));
 
   if (io) {
     io.to(`party:${partyId}`).emit('party:ended', { partyId });
@@ -622,6 +633,7 @@ router.post('/party/:partyId/settings/mood', hostActionLimiter, requireAuth, (re
   }
 
   store.updateParty(partyId, { mood });
+  updatePartySettings(partyId, { mood }).catch((err) => console.error('[DB] updatePartySettings failed:', err));
 
   // Broadcast settings update
   if (io) {
@@ -659,6 +671,7 @@ router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, requireAu
   }
 
   store.updateParty(partyId, { kidFriendly });
+  updatePartySettings(partyId, { kidFriendly }).catch((err) => console.error('[DB] updatePartySettings failed:', err));
 
   // Broadcast settings update
   if (io) {
@@ -696,6 +709,7 @@ router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, requ
   }
 
   store.updateParty(partyId, { allowSuggestions });
+  updatePartySettings(partyId, { allowSuggestions }).catch((err) => console.error('[DB] updatePartySettings failed:', err));
 
   // Broadcast settings update
   if (io) {
@@ -733,6 +747,7 @@ router.post('/party/:partyId/settings/locked', hostActionLimiter, requireAuth, (
   }
 
   store.updateParty(partyId, { locked });
+  updatePartySettings(partyId, { locked }).catch((err) => console.error('[DB] updatePartySettings failed:', err));
 
   // Broadcast settings update
   if (io) {
@@ -911,6 +926,7 @@ router.post('/party/:partyId/code/regenerate', regenerateCodeLimiter, requireAut
 
   const newCode = generateJoinCode();
   store.setJoinCode(newCode, partyId);
+  updateJoinCode(partyId, newCode).catch((err) => console.error('[DB] updateJoinCode failed:', err));
 
   if (io) {
     io.to(`party:${partyId}`).emit('party:codeRegenerated', { joinCode: newCode });

@@ -158,7 +158,7 @@ export function useParty(): UsePartyResult {
       console.log('✅ Party started');
     } catch (err) {
       if (isPartyNotFound(err)) {
-        setError('Party session expired — the server restarted. Please create a new party.');
+        setError('This party no longer exists on the server. Please create a new party.');
         stopHeartbeat();
         disconnectSocket();
         setPartyState(null);
@@ -225,7 +225,7 @@ export function useParty(): UsePartyResult {
     } catch (err) {
       console.error('Failed to update settings:', err);
       if (isPartyNotFound(err)) {
-        setError('Party session expired — the server restarted. Please create a new party.');
+        setError('This party no longer exists on the server. Please create a new party.');
         stopHeartbeat();
         disconnectSocket();
         setPartyState(null);

@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Idempotent — uses IF NOT EXISTS / DO $$ EXCEPTION blocks.
  */
 export async function runMigrations(): Promise<void> {
-  const migrations = ['0001_initial.sql'];
+  const migrations = ['0001_initial.sql', '0002_parties.sql'];
 
   for (const file of migrations) {
     const sql = readFileSync(join(__dirname, 'migrations', file), 'utf-8');

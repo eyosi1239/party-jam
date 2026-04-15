@@ -19,6 +19,7 @@ if (getApps().length === 0) {
 }
 import { ENV } from './config.js';
 import { store } from './store.js';
+import { loadActiveParties } from './db/partyRepo.js';
 import partyRoutes, { setSocketIO } from './routes/party.js';
 import appleMusicRoutes from './routes/appleMusic.js';
 import userRoutes from './routes/users.js';
@@ -180,9 +181,24 @@ io.on('connection', (socket) => {
   });
 });
 
-// Run DB migrations then start server
+// Run DB migrations, restore in-memory party state, then start server
 runMigrations()
-  .then(() => {
+  .then(async () => {
+    // Restore active parties (CREATED or LIVE) from DB so the store survives redeploys
+    try {
+      const persisted = await loadActiveParties();
+      for (const { party, joinCode } of persisted) {
+        store.createParty(party);
+        if (joinCode) store.setJoinCode(joinCode, party.partyId);
+      }
+      if (persisted.length > 0) {
+        console.log(`  ✓ restored ${persisted.length} active part${persisted.length === 1 ? 'y' : 'ies'} from DB`);
+      }
+    } catch (err) {
+      // Non-fatal — server still starts, parties will just need to be recreated
+      console.error('  ✗ failed to restore parties from DB:', err);
+    }
+
     httpServer.listen(ENV.PORT, () => {
       console.log(`🎵 Party Jam backend running on port ${ENV.PORT}`);
       console.log(`   Frontend origin: ${ENV.FRONTEND_ORIGIN}`);
