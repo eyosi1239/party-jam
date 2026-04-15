@@ -140,6 +140,18 @@ class ApiClient {
     });
   }
 
+  async acceptSuggestion(partyId: string, trackId: string): Promise<{ ok: boolean }> {
+    return this.request(`/party/${partyId}/suggestions/${trackId}/accept`, {
+      method: 'POST',
+    });
+  }
+
+  async rejectSuggestion(partyId: string, trackId: string): Promise<{ ok: boolean }> {
+    return this.request(`/party/${partyId}/suggestions/${trackId}/reject`, {
+      method: 'POST',
+    });
+  }
+
   // Settings
   async updateMood(partyId: string, data: UpdateMoodRequest): Promise<{ mood: string }> {
     return this.request(`/party/${partyId}/settings/mood`, {

@@ -4,7 +4,7 @@ import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
 import { Modal } from '@/app/components/Modal';
 import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, User, Settings } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PartyState } from '@/lib/types';
 import { getMusicProvider, getMusicPlatform } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
@@ -49,8 +49,21 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
   const autoSeedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track current queue length in a ref so the timer callback sees up-to-date value
   const queueLengthRef = useRef<number>(0);
+  // Keep latest partyState in a ref so async callbacks always read fresh values
+  const partyStateRef = useRef<PartyState | null>(partyState);
 
-  const spotifyPlayer = useSpotifyPlayer();
+  useEffect(() => {
+    partyStateRef.current = partyState;
+  }, [partyState]);
+
+  // Auto-advance: when the Spotify SDK signals track end, skip to next song
+  const handleTrackEnd = useCallback(() => {
+    const ps = partyStateRef.current;
+    if (!ps) return;
+    api.skipCurrentSong(ps.party.partyId, ps.party.hostId).catch(console.error);
+  }, []);
+
+  const spotifyPlayer = useSpotifyPlayer(handleTrackEnd);
   const appleMusicPlayer = useAppleMusicPlayer();
 
   // Pick the active player based on which platform the host is using
@@ -99,6 +112,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
   const queue = partyState.queue || [];
   const members = partyState.members || [];
   const nowPlaying = partyState.nowPlaying;
+  const testingSuggestions = partyState.testingSuggestions || [];
   const { party } = partyState;
   const isRoomLocked = party.locked ?? false;
   const displayCode = joinCode || party.partyId.slice(0, 6).toUpperCase();
@@ -164,6 +178,14 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
   // Keep the ref up-to-date so the debounced auto-seed always calls the latest version
   // Keep ref current so the debounced auto-seed always calls the latest version
   seedQueueRef.current = handleSeedQueue;
+
+  const handleAcceptSuggestion = async (trackId: string) => {
+    try { await api.acceptSuggestion(party.partyId, trackId); } catch (err) { console.error(err); }
+  };
+
+  const handleRejectSuggestion = async (trackId: string) => {
+    try { await api.rejectSuggestion(party.partyId, trackId); } catch (err) { console.error(err); }
+  };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(displayCode).catch(() => {});
@@ -307,19 +329,59 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
     </div>
   );
 
+  const SuggestionsSection = testingSuggestions.length > 0 ? (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-xl text-white font-medium">Pending Suggestions</h2>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium">
+          {testingSuggestions.length}
+        </span>
+      </div>
+      <div className="space-y-3">
+        {testingSuggestions.map((song) => (
+          <div key={song.trackId} className="bg-gradient-to-r from-purple-500/10 to-pink-500/5 border border-purple-500/20 rounded-2xl p-4">
+            <div className="flex items-center gap-4">
+              {song.albumArtUrl && (
+                <img src={song.albumArtUrl} alt={song.title} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-white truncate">{song.title}</div>
+                <div className="text-sm text-white/60 truncate">{song.artist}</div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleAcceptSuggestion(song.trackId)}
+                  className="px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30 text-sm font-medium transition-all duration-200"
+                >
+                  Add to Queue
+                </button>
+                <button
+                  onClick={() => handleRejectSuggestion(song.trackId)}
+                  className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-sm transition-all duration-200"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   const QueueSection = (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl text-white font-medium">Queue</h2>
         <div className="flex items-center gap-3">
           <span className="text-white/60 text-sm">{queue.length} songs</span>
-          {party.status === 'LIVE' && queue.length === 0 && (
+          {party.status === 'LIVE' && (
             <button
               onClick={handleSeedQueue}
               disabled={isSeedingQueue}
               className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-sm disabled:opacity-50"
             >
-              {isSeedingQueue ? 'Seeding...' : 'Seed Queue'}
+              {isSeedingQueue ? 'Seeding...' : queue.length === 0 ? 'Seed Queue' : 'Add More'}
             </button>
           )}
         </div>
@@ -423,8 +485,11 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
             {RoomCodeSection}
             {SettingsSection}
           </div>
-          {/* Middle: Queue */}
-          <div>{QueueSection}</div>
+          {/* Middle: Queue + Suggestions */}
+          <div className="space-y-4">
+            {SuggestionsSection}
+            {QueueSection}
+          </div>
           {/* Right: Members */}
           <div>{MembersSection}</div>
         </div>
@@ -435,6 +500,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
         {NowPlayingSection}
         {ControlsSection}
         {RoomCodeSection}
+        {SuggestionsSection}
         {QueueSection}
         {MembersSection}
         {SettingsSection}
