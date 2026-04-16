@@ -180,6 +180,8 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
   }
 
   const suggestionsDisabled = !party?.allowSuggestions;
+  const guestMode = party?.guestMode ?? 'suggest';
+  const isOpenMode = guestMode === 'open';
 
   return (
     <div className="min-h-screen text-white pb-28">
@@ -298,7 +300,17 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
           <div className="space-y-4">
             {suggestionsDisabled && (
               <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm text-center">
-                Host has disabled suggestions — voting only
+                Host has disabled contributions — voting only
+              </div>
+            )}
+            {!suggestionsDisabled && isOpenMode && (
+              <div className="px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm text-center">
+                Open queue — songs you add go straight in
+              </div>
+            )}
+            {!suggestionsDisabled && !isOpenMode && (
+              <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/40 text-sm text-center">
+                Suggest mode — host approves before adding
               </div>
             )}
             <div className="relative">
@@ -341,6 +353,7 @@ export function GuestView({ partyState, partyId, userId, joinCode, onVote, onCre
                         tags={blocked ? ['Blocked'] : []}
                         disabled={suggestionsDisabled || blocked}
                         trackUri={track.uri}
+                        addLabel={isOpenMode ? 'Add' : 'Suggest'}
                         onAdd={() => handleSuggest(track)}
                       />
                     );

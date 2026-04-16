@@ -329,7 +329,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
     </div>
   );
 
-  const SuggestionsSection = testingSuggestions.length > 0 ? (
+  const SuggestionsSection = testingSuggestions.length > 0 && party.guestMode !== 'open' ? (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-xl text-white font-medium">Pending Suggestions</h2>
@@ -450,28 +450,21 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
             </div>
           </div>
           <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowProfilePanel(true)}
-            className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
-            title="Profile"
-          >
-            <User className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setShowSettingsPanel(true)}
-            className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+            <button
+              onClick={() => setShowProfilePanel(true)}
+              className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
+              title="Profile"
+            >
+              <User className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowSettingsPanel(true)}
+              className="p-2 rounded-xl text-white/60 hover:text-purple-400 hover:bg-white/10 transition-all duration-200"
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowEndPartyModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all duration-200 text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">End Party</span>
-          </button>
         </div>
       </div>
 
@@ -567,8 +560,10 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
         kidFriendly={party.kidFriendly}
         allowSuggestions={party.allowSuggestions}
         locked={isRoomLocked}
+        guestMode={party.guestMode ?? 'suggest'}
         onUpdateSettings={onUpdateSettings}
         onRegenerateCode={onRegenerateCode}
+        onEndParty={() => setShowEndPartyModal(true)}
       />
 
       {/* End Party Modal */}

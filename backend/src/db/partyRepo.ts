@@ -15,6 +15,7 @@ interface PartyRow {
   kid_friendly: boolean;
   allow_suggestions: boolean;
   locked: boolean;
+  guest_mode: string;
   join_code: string | null;
   created_at: Date;
   ended_at: Date | null;
@@ -31,6 +32,7 @@ function rowToParty(row: PartyRow): { party: Party; joinCode: string | null } {
       kidFriendly: row.kid_friendly,
       allowSuggestions: row.allow_suggestions,
       locked: row.locked,
+      guestMode: (row.guest_mode as Party['guestMode']) ?? 'suggest',
       createdAt: row.created_at.getTime(),
     },
     joinCode: row.join_code,
@@ -41,8 +43,8 @@ function rowToParty(row: PartyRow): { party: Party; joinCode: string | null } {
 export async function saveParty(party: Party, joinCode: string): Promise<void> {
   await pool.query(
     `INSERT INTO parties
-       (party_id, host_id, name, status, mood, kid_friendly, allow_suggestions, locked, join_code, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,to_timestamp($10::double precision / 1000))
+       (party_id, host_id, name, status, mood, kid_friendly, allow_suggestions, locked, guest_mode, join_code, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,to_timestamp($11::double precision / 1000))
      ON CONFLICT (party_id) DO NOTHING`,
     [
       party.partyId,
@@ -53,6 +55,7 @@ export async function saveParty(party: Party, joinCode: string): Promise<void> {
       party.kidFriendly,
       party.allowSuggestions,
       party.locked,
+      party.guestMode,
       joinCode,
       party.createdAt,
     ]
@@ -76,6 +79,7 @@ export async function updatePartySettings(
     kidFriendly?: boolean;
     allowSuggestions?: boolean;
     locked?: boolean;
+    guestMode?: string;
   }
 ): Promise<void> {
   const setClauses: string[] = [];
@@ -97,6 +101,10 @@ export async function updatePartySettings(
   if (settings.locked !== undefined) {
     setClauses.push(`locked = $${idx++}`);
     values.push(settings.locked);
+  }
+  if (settings.guestMode !== undefined) {
+    setClauses.push(`guest_mode = $${idx++}`);
+    values.push(settings.guestMode);
   }
 
   if (setClauses.length === 0) return;

@@ -10,9 +10,13 @@ CREATE TABLE IF NOT EXISTS parties (
   kid_friendly      BOOLEAN      NOT NULL DEFAULT FALSE,
   allow_suggestions BOOLEAN      NOT NULL DEFAULT TRUE,
   locked            BOOLEAN      NOT NULL DEFAULT FALSE,
+  guest_mode        VARCHAR(10)  NOT NULL DEFAULT 'suggest',
   join_code         VARCHAR(10),
   created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   ended_at          TIMESTAMPTZ
 );
+
+-- Idempotent backfill: add guest_mode if table was created by an earlier run of this migration
+ALTER TABLE parties ADD COLUMN IF NOT EXISTS guest_mode VARCHAR(10) NOT NULL DEFAULT 'suggest';
 
 CREATE INDEX IF NOT EXISTS parties_status_idx ON parties (status);

@@ -54,7 +54,7 @@ export interface UsePartyResult {
   joinParty: (partyId: string, userId: string, displayName?: string) => Promise<void>;
   startParty: () => Promise<void>;
   vote: (trackId: string, vote: 'UP' | 'DOWN' | 'NONE', context: 'QUEUE' | 'TESTING') => Promise<void>;
-  updateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
+  updateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean; guestMode?: 'suggest' | 'open' }) => Promise<void>;
   regenerateCode: () => Promise<void>;
   leaveParty: () => void;
 }
@@ -200,6 +200,7 @@ export function useParty(): UsePartyResult {
     kidFriendly?: boolean;
     allowSuggestions?: boolean;
     locked?: boolean;
+    guestMode?: 'suggest' | 'open';
   }) => {
     if (!partyId || !userId) return;
 
@@ -221,6 +222,9 @@ export function useParty(): UsePartyResult {
       }
       if (settings.locked !== undefined) {
         await api.updateLocked(partyId, { hostId: userId, locked: settings.locked });
+      }
+      if (settings.guestMode !== undefined) {
+        await api.updateGuestMode(partyId, userId, settings.guestMode);
       }
     } catch (err) {
       console.error('Failed to update settings:', err);
@@ -315,6 +319,7 @@ export function useParty(): UsePartyResult {
             kidFriendly: data.kidFriendly,
             allowSuggestions: data.allowSuggestions,
             locked: data.locked ?? prev.party.locked,
+            guestMode: data.guestMode ?? prev.party.guestMode,
           },
         };
       });
