@@ -73,6 +73,11 @@ export async function configureMusicKit(): Promise<void> {
   if (getInstance()) return;
 
   const res = await fetch(`${API_BASE}/apple-music/token`);
+  if (res.status === 503) {
+    // Backend doesn't have Apple Music credentials configured — silently skip.
+    // Apple Music will remain unavailable and getMusicProvider() falls through to the next provider.
+    return;
+  }
   if (!res.ok) {
     throw new Error('Failed to fetch Apple Music developer token from backend.');
   }

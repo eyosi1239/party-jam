@@ -217,9 +217,11 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Make authenticated request to Spotify API
+ * Make authenticated request to Spotify API.
+ * - 401: token expired mid-flight → refresh once and retry
+ * - 400: token is invalid/revoked → clear all tokens so the next call falls through to Deezer
  */
-async function spotifyRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function spotifyRequest<T>(endpoint: string, options: RequestInit = {}, _isRetry = false): Promise<T> {
   const token = await getAccessToken();
 
   const response = await fetch(`${SPOTIFY_API_BASE}${endpoint}`, {
@@ -231,7 +233,24 @@ async function spotifyRequest<T>(endpoint: string, options: RequestInit = {}): P
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    if (response.status === 401 && !_isRetry) {
+      // Token expired mid-request (getAccessToken may have had a stale window) — refresh and retry once
+      try {
+        await refreshAccessToken();
+        return spotifyRequest(endpoint, options, true);
+      } catch {
+        logout();
+        throw new Error('Spotify session expired. Please reconnect Spotify.');
+      }
+    }
+
+    if (response.status === 400) {
+      // Bad token (revoked, wrong app, corrupted) — clear it so getMusicProvider() falls through to Deezer
+      logout();
+      throw new Error('Spotify token is invalid. Please reconnect Spotify to continue using it.');
+    }
+
+    const error = await response.json().catch(() => ({}));
     throw new Error(`Spotify API error: ${error.error?.message || response.statusText}`);
   }
 
