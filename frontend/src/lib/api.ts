@@ -190,6 +190,17 @@ class ApiClient {
     });
   }
 
+  async updateGuestMode(
+    partyId: string,
+    hostId: string,
+    guestMode: 'suggest' | 'open'
+  ): Promise<{ guestMode: string }> {
+    return this.request(`/party/${partyId}/settings/guestMode`, {
+      method: 'POST',
+      body: JSON.stringify({ hostId, guestMode }),
+    });
+  }
+
   // Now Playing
   async updateNowPlaying(
     partyId: string,

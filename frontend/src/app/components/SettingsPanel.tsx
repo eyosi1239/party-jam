@@ -1,10 +1,11 @@
-import { X, Lock, RefreshCw, Sparkles, Flame, Dumbbell, Brain, Music } from 'lucide-react';
+import { Lock, RefreshCw, Sparkles, Flame, Dumbbell, Brain, Music, MessageSquarePlus, ListPlus, LogOut } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/app/components/ui/sheet';
+import type { GuestMode } from '@/lib/types';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -13,8 +14,10 @@ interface SettingsPanelProps {
   kidFriendly: boolean;
   allowSuggestions: boolean;
   locked: boolean;
-  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
+  guestMode: GuestMode;
+  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean; guestMode?: GuestMode }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
+  onEndParty: () => void;
 }
 
 const MOODS = [
@@ -36,21 +39,15 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
   );
 }
 
-export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestions, locked, onUpdateSettings, onRegenerateCode }: SettingsPanelProps) {
+export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestions, locked, guestMode, onUpdateSettings, onRegenerateCode, onEndParty }: SettingsPanelProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
         side="right"
         className="w-80 bg-zinc-900 border-l border-white/10 text-white p-0 flex flex-col"
       >
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/10 flex-row items-center justify-between space-y-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/10">
           <SheetTitle className="text-white text-lg font-semibold">Party Settings</SheetTitle>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -75,7 +72,7 @@ export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestio
             </div>
           </div>
 
-          {/* Toggles */}
+          {/* Room Controls */}
           <div>
             <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Controls</h3>
             <div className="space-y-3">
@@ -86,13 +83,6 @@ export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestio
                   value: locked,
                   onChange: () => onUpdateSettings({ locked: !locked }),
                   icon: <Lock className="w-4 h-4 text-white/50" />,
-                },
-                {
-                  label: 'Allow Suggestions',
-                  description: 'Let guests suggest songs',
-                  value: allowSuggestions,
-                  onChange: () => onUpdateSettings({ allowSuggestions: !allowSuggestions }),
-                  icon: null,
                 },
                 {
                   label: 'Kid-Friendly',
@@ -119,6 +109,53 @@ export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestio
             </div>
           </div>
 
+          {/* Guest Contributions */}
+          <div>
+            <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Guest Contributions</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                <div>
+                  <div className="text-sm text-white">Allow Suggestions</div>
+                  <div className="text-xs text-white/40">Let guests add music</div>
+                </div>
+                <Toggle value={allowSuggestions} onChange={() => onUpdateSettings({ allowSuggestions: !allowSuggestions })} />
+              </div>
+
+              {allowSuggestions && (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => onUpdateSettings({ guestMode: 'suggest' })}
+                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200 ${
+                      guestMode === 'suggest'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-white'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <MessageSquarePlus className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium">Suggest mode</div>
+                      <div className="text-xs text-white/40 mt-0.5">You approve each song before it enters the queue</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => onUpdateSettings({ guestMode: 'open' })}
+                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all duration-200 ${
+                      guestMode === 'open'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-white'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <ListPlus className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium">Open queue</div>
+                      <div className="text-xs text-white/40 mt-0.5">Guests add songs directly to the queue</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Room code */}
           <div>
             <h3 className="text-xs text-white/50 uppercase tracking-wider mb-3">Room Code</h3>
@@ -128,6 +165,18 @@ export function SettingsPanel({ open, onClose, mood, kidFriendly, allowSuggestio
             >
               <RefreshCw className="w-4 h-4" />
               Generate New Code
+            </button>
+          </div>
+
+          {/* Danger Zone */}
+          <div>
+            <h3 className="text-xs text-red-500/70 uppercase tracking-wider mb-3">Danger Zone</h3>
+            <button
+              onClick={() => { onClose(); onEndParty(); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all duration-200 text-sm font-medium"
+            >
+              <LogOut className="w-4 h-4" />
+              End Party
             </button>
           </div>
         </div>

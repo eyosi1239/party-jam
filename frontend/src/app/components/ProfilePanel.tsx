@@ -1,4 +1,4 @@
-import { X, Music, LogOut, User } from 'lucide-react';
+import { Music, LogOut, User } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useSpotify } from '@/contexts/SpotifyContext';
 import { useAppleMusic } from '@/contexts/AppleMusicContext';
+import { hadSpotifySession } from '@/lib/spotify';
 
 interface ProfilePanelProps {
   open: boolean;
@@ -25,14 +26,8 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         side="right"
         className="w-80 bg-zinc-900 border-l border-white/10 text-white p-0 flex flex-col"
       >
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/10 flex-row items-center justify-between space-y-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/10">
           <SheetTitle className="text-white text-lg font-semibold">Profile</SheetTitle>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -101,13 +96,17 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               </div>
             ) : (
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                <div className="text-sm text-white/50">Not connected</div>
+                {hadSpotifySession() ? (
+                  <div className="text-sm text-white/50">Previously connected</div>
+                ) : (
+                  <div className="text-sm text-white/50">Not connected</div>
+                )}
                 {spotify.isConfigured && (
                   <button
                     onClick={() => { spotify.login(); onClose(); }}
                     className="w-full py-2 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-all duration-200 text-sm font-medium"
                   >
-                    Connect Spotify
+                    {hadSpotifySession() ? 'Reconnect Spotify' : 'Connect Spotify'}
                   </button>
                 )}
               </div>

@@ -16,6 +16,8 @@ interface SongCardProps {
   disabled?: boolean;
   /** Platform URI, e.g. "spotify:track:xxx" or "apple:song:xxx" — used for "View on" link */
   trackUri?: string;
+  /** Label for the add action in the dropdown menu. Defaults to "Suggest to party". */
+  addLabel?: string;
   onAdd?: () => void;
   /** @deprecated — menu actions are now handled by the built-in DropdownMenu */
   onMenuClick?: () => void;
@@ -38,7 +40,7 @@ function getViewLabel(trackUri?: string): string {
   return 'View track';
 }
 
-export function SongCard({ albumArt, title, artist, tags = [], explicit = false, disabled = false, trackUri, onAdd }: SongCardProps) {
+export function SongCard({ albumArt, title, artist, tags = [], explicit = false, disabled = false, trackUri, addLabel = 'Suggest to party', onAdd }: SongCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
@@ -120,7 +122,7 @@ export function SongCard({ albumArt, title, artist, tags = [], explicit = false,
                   className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Suggest to party
+                  {addLabel}
                 </DropdownMenuItem>
               )}
               {getViewUrl(trackUri) && (

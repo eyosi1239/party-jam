@@ -9,6 +9,8 @@ export type SongStatus = 'QUEUED' | 'TESTING' | 'PROMOTED' | 'REMOVED' | 'EXPIRE
 export type VoteType = 'UP' | 'DOWN' | 'NONE';
 export type VoteContext = 'QUEUE' | 'TESTING';
 
+export type GuestMode = 'suggest' | 'open';
+
 export interface Party {
   partyId: string;
   hostId: string;
@@ -18,6 +20,7 @@ export interface Party {
   kidFriendly: boolean;
   allowSuggestions: boolean;
   locked: boolean;
+  guestMode: GuestMode;
   createdAt: number;
 }
 

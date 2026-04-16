@@ -368,6 +368,15 @@ export function isLoggedIn(): boolean {
 }
 
 /**
+ * Returns true if localStorage has a stale Spotify access token (meaning the user
+ * previously connected Spotify on this device but is now logged out / token expired
+ * without a refresh token). Used to show "Reconnect Spotify" instead of "Connect Spotify".
+ */
+export function hadSpotifySession(): boolean {
+  return !isLoggedIn() && !!localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+/**
  * Log out (clear all tokens)
  */
 export function logout(): void {

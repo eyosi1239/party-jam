@@ -18,11 +18,14 @@ import {
 
 const MOODS = ['chill', 'hype', 'romantic', 'workout', 'focus'] as const;
 
+const GUEST_MODES = ['suggest', 'open'] as const;
+
 const CreatePartySchema = z.object({
   name: z.string().max(60).optional(),
   mood: z.enum(MOODS).default('chill'),
   kidFriendly: z.boolean().default(false),
   allowSuggestions: z.boolean().default(true),
+  guestMode: z.enum(GUEST_MODES).default('suggest'),
 });
 
 const JoinPartySchema = z.object({
@@ -79,7 +82,7 @@ router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Respo
   const body = parseBody(CreatePartySchema, req, res);
   if (!body) return;
 
-  const { name, mood, kidFriendly, allowSuggestions } = body;
+  const { name, mood, kidFriendly, allowSuggestions, guestMode } = body;
   const partyId = generateId('party');
   const joinCode = generateJoinCode();
   const now = Date.now();
@@ -93,6 +96,7 @@ router.post('/party', createPartyLimiter, requireAuth, (req: Request, res: Respo
     kidFriendly,
     allowSuggestions,
     locked: false,
+    guestMode,
     createdAt: now,
   };
 
@@ -509,6 +513,33 @@ router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Reque
   // Update member activity
   store.updateMemberActivity(partyId, userId);
 
+  // Build song object (used by both modes)
+  const song: Song = {
+    trackId,
+    title: title || 'Suggested Song',
+    artist: artist || 'Unknown Artist',
+    albumArtUrl: albumArtUrl || '',
+    explicit: isExplicit ?? false,
+    source: 'GUEST_SUGGESTION',
+    status: 'QUEUED',
+    upvotes: 0,
+    downvotes: 0,
+  };
+
+  // Open mode: add directly to queue, no testing flow
+  const effectiveGuestMode = party.guestMode ?? 'suggest';
+  if (effectiveGuestMode === 'open') {
+    store.addToQueue(partyId, song);
+    if (io) {
+      const state = store.getState(partyId);
+      if (state) {
+        io.to(`party:${partyId}`).emit('party:queueUpdated', { queue: state.queue });
+      }
+    }
+    return res.json({ song, mode: 'open' });
+  }
+
+  // Suggest mode: existing testing/voting flow
   // Get active members
   const activeMembers = store.getActiveMembers(partyId);
   const activeMembersCount = activeMembers.length;
@@ -526,18 +557,8 @@ router.post('/party/:partyId/suggest', suggestLimiter, optionalAuth, (req: Reque
     sampleUserIds.push(party.hostId);
   }
 
-  // Build song from metadata sent by the client
-  const song: Song = {
-    trackId,
-    title: title || 'Suggested Song',
-    artist: artist || 'Unknown Artist',
-    albumArtUrl: albumArtUrl || '',
-    explicit: isExplicit ?? false,
-    source: 'GUEST_SUGGESTION',
-    status: 'TESTING',
-    upvotes: 0,
-    downvotes: 0,
-  };
+  // Update song status for testing flow
+  song.status = 'TESTING';
 
   // Store suggestion
   const suggestion: Suggestion = {
@@ -644,6 +665,7 @@ router.post('/party/:partyId/settings/mood', hostActionLimiter, requireAuth, (re
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
         locked: updatedParty.locked,
+        guestMode: updatedParty.guestMode,
       });
     }
   }
@@ -682,6 +704,7 @@ router.post('/party/:partyId/settings/kidFriendly', hostActionLimiter, requireAu
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
         locked: updatedParty.locked,
+        guestMode: updatedParty.guestMode,
       });
     }
   }
@@ -720,6 +743,7 @@ router.post('/party/:partyId/settings/allowSuggestions', hostActionLimiter, requ
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
         locked: updatedParty.locked,
+        guestMode: updatedParty.guestMode,
       });
     }
   }
@@ -758,11 +782,50 @@ router.post('/party/:partyId/settings/locked', hostActionLimiter, requireAuth, (
         kidFriendly: updatedParty.kidFriendly,
         allowSuggestions: updatedParty.allowSuggestions,
         locked: updatedParty.locked,
+        guestMode: updatedParty.guestMode,
       });
     }
   }
 
   res.json({ locked });
+});
+
+// POST /party/:partyId/settings/guestMode - Set guest contribution mode
+router.post('/party/:partyId/settings/guestMode', hostActionLimiter, requireAuth, (req: Request, res: Response) => {
+  const { partyId } = req.params;
+  const hostId = req.user!.uid;
+  const { guestMode } = req.body;
+
+  if (!guestMode || !['suggest', 'open'].includes(guestMode)) {
+    return res.status(400).json(createError('INVALID_REQUEST', 'guestMode must be "suggest" or "open"'));
+  }
+
+  const party = store.getParty(partyId);
+  if (!party) {
+    return res.status(404).json(createError('PARTY_NOT_FOUND', 'Party not found'));
+  }
+
+  if (party.hostId !== hostId) {
+    return res.status(403).json(createError('NOT_HOST', 'Only host can update guest mode'));
+  }
+
+  store.updateParty(partyId, { guestMode });
+  updatePartySettings(partyId, { guestMode }).catch((err) => console.error('[DB] updatePartySettings failed:', err));
+
+  if (io) {
+    const updatedParty = store.getParty(partyId);
+    if (updatedParty) {
+      io.to(`party:${partyId}`).emit('party:settingsUpdated', {
+        mood: updatedParty.mood,
+        kidFriendly: updatedParty.kidFriendly,
+        allowSuggestions: updatedParty.allowSuggestions,
+        locked: updatedParty.locked,
+        guestMode: updatedParty.guestMode,
+      });
+    }
+  }
+
+  res.json({ guestMode });
 });
 
 // POST /party/:partyId/nowPlaying - Update now playing
