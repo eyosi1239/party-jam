@@ -3,9 +3,9 @@ import { QueueItemLarge } from '@/app/components/QueueItemLarge';
 import { NowPlayingCard } from '@/app/components/NowPlayingCard';
 import { MemberList } from '@/app/components/MemberList';
 import { Modal } from '@/app/components/Modal';
-import { Lock, RefreshCw, Users, Copy, QrCode, LogOut, Music, Play, Pause, SkipForward, Volume2, User, Settings } from 'lucide-react';
+import { Lock, RefreshCw, Users, Copy, QrCode, Music, Play, Pause, SkipForward, Volume2, User, Settings } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { PartyState } from '@/lib/types';
+import type { PartyState, GuestMode } from '@/lib/types';
 import { getMusicProvider, getMusicPlatform } from '@/lib/music';
 import { useSpotifyPlayer } from '@/lib/useSpotifyPlayer';
 import { useAppleMusicPlayer } from '@/lib/useAppleMusicPlayer';
@@ -25,7 +25,7 @@ interface HostViewProps {
   joinCode: string | null;
   queueLowSignal?: number;
   onStartParty: () => Promise<void>;
-  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean }) => Promise<void>;
+  onUpdateSettings: (settings: { mood?: string; kidFriendly?: boolean; allowSuggestions?: boolean; locked?: boolean; guestMode?: GuestMode }) => Promise<void>;
   onRegenerateCode: () => Promise<void>;
   onLeaveRoom?: () => void;
 }
@@ -175,9 +175,21 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
       setIsSeedingQueue(false);
     }
   };
-  // Keep the ref up-to-date so the debounced auto-seed always calls the latest version
   // Keep ref current so the debounced auto-seed always calls the latest version
   seedQueueRef.current = handleSeedQueue;
+
+  // Start party, then auto-seed if the queue is empty
+  const handleStartParty = async () => {
+    try {
+      await onStartParty();
+      // Queue snapshot at click time — if nothing queued, kick off a seed
+      if (queue.length === 0) {
+        await handleSeedQueue();
+      }
+    } catch {
+      // onStartParty reports errors through useParty; seed errors are handled inside handleSeedQueue
+    }
+  };
 
   const handleAcceptSuggestion = async (trackId: string) => {
     try { await api.acceptSuggestion(party.partyId, trackId); } catch (err) { console.error(err); }
@@ -213,7 +225,7 @@ export function HostView({ partyState, joinCode, queueLowSignal = 0, onStartPart
       <p className="text-white/60 mb-4">No song playing</p>
       {party.status === 'CREATED' && (
         <button
-          onClick={onStartParty}
+          onClick={handleStartParty}
           className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-medium transition-all duration-200"
         >
           Start Party
